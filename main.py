@@ -2,8 +2,8 @@ import discord
 from discord.ext import commands
 import os
 import asyncio
-from config.settings import TOKEN
-from config.settings import BOT_NAME, BOT_VERSION
+from config.settings import TOKEN  
+from config.settings import BOT_NAME, BOT_VERSION  
 
 intents = discord.Intents.all()
 client = commands.Bot(command_prefix="!", intents=intents)
@@ -30,7 +30,7 @@ async def on_ready():
     
     try:
         synced = await client.tree.sync()
-        print(f"Synced {len(synced)} slash command(s) (e.g., /notices, /setup)")
+        print(f"Synced {len(synced)} slash command(s)")
     except Exception as e:
         print(f"Failed to sync commands: {e}")
 
