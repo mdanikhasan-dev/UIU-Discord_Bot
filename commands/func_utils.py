@@ -1,3 +1,27 @@
+"""
+commands/func_utils.py  (was: func(1)_for(string).py)
+───────────────────────────────────────────────────────
+Personal utility / demo code.  Not loaded as a Discord extension.
+
+IMPORTANT: The original filename  func(1)_for(string).py  contains
+parentheses, which make it an invalid Python module name.  Python
+cannot import it with load_extension().  It was silently skipped by
+the except clause in load_extensions() every startup.  Renamed to
+func_utils.py so it can be imported normally if needed.
+
+ALSO IMPORTANT: The original file contained:
+
+    @lru_cache(maxsize=32)
+    def cached(x: int) -> int:
+        time.sleep(1)    # ← blocking sleep inside a cached function
+        return x * x
+
+If cached() were ever called from an async context WITHOUT running it
+in a thread executor, it would block the event loop for 1 second.
+It is safe here because this module is not loaded as a cog and cached()
+is never called by any Discord event handler.  Left unchanged.
+"""
+
 import asyncio
 import time
 import random
@@ -5,6 +29,7 @@ from abc import ABC, abstractmethod
 from functools import lru_cache, wraps
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, Dict
+
 
 def timed(func: Callable):
     @wraps(func)
@@ -15,6 +40,7 @@ def timed(func: Callable):
         print(f"{func.__name__} took {end - start:.2f}s")
         return result
     return wrapper
+
 
 def retry(times: int = 3):
     def decorator(func):
@@ -29,10 +55,12 @@ def retry(times: int = 3):
         return wrapper
     return decorator
 
+
 class Task(ABC):
     @abstractmethod
     async def run(self) -> Any:
         pass
+
 
 class IOTask(Task):
     @timed
@@ -42,6 +70,7 @@ class IOTask(Task):
         if random.random() < 0.3:
             raise RuntimeError("IO failure")
         return "IO done"
+
 
 class CPUTask(Task):
     def heavy(self, n: int) -> int:
@@ -55,10 +84,12 @@ class CPUTask(Task):
         with ThreadPoolExecutor() as pool:
             return await loop.run_in_executor(pool, self.heavy, 2_000_000)
 
+
 @lru_cache(maxsize=32)
 def cached(x: int) -> int:
     time.sleep(1)
     return x * x
+
 
 class TaskScheduler:
     def __init__(self):
@@ -76,9 +107,9 @@ class TaskScheduler:
                 results[name] = str(e)
         return results
 
+
 async def main():
     scheduler = TaskScheduler()
-
     scheduler.register("io1", IOTask())
     scheduler.register("io2", IOTask())
     scheduler.register("cpu", CPUTask())
@@ -89,6 +120,7 @@ async def main():
     results = await scheduler.execute()
     for k, v in results.items():
         print(k, v)
+
 
 if __name__ == "__main__":
     asyncio.run(main())
