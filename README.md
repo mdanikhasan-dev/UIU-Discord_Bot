@@ -26,13 +26,6 @@
   <img src="https://img.shields.io/github/repo-size/Sawlper/UIU-BOT-Discord?style=for-the-badge&color=8E44AD" alt="Repository size" />
 </p>
 
-<p align="center">
-  <img src="Asset/Icon%20%20gifs/Sync.gif" alt="Sync animation" width="130" />
-  <img src="Asset/Icon%20%20gifs/Setup.gif" alt="Setup animation" width="130" />
-  <img src="Asset/Icon%20%20gifs/Api.gif" alt="API animation" width="130" />
-  <img src="Asset/Icon%20%20gifs/Sustainability.gif" alt="Sustainability animation" width="130" />
-</p>
-
 ## Why This Bot Is Useful
 
 - Pulls the latest UIU notices directly into Discord.
@@ -44,13 +37,25 @@
 ## Preview
 
 <p align="center">
-  <img src="Asset/CommandsPVWgifs/bothelp.gif" alt="Help command preview" width="48%" />
-  <img src="Asset/CommandsPVWgifs/dcsetup.gif" alt="Setup command preview" width="48%" />
+  <img src="./Asset/CommandsPVWgifs/Screenshot 2025-11-10 022703.png" alt="UIU Bot preview screenshot" width="92%" />
 </p>
 
 <p align="center">
-  <img src="Asset/CommandsPVWgifs/Screenshot%202025-11-10%20022703.png" alt="Bot preview screenshot" width="82%" />
+  <sub>Main Discord view with the bot in action.</sub>
 </p>
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <strong>Help Command Walkthrough</strong><br />
+      <img src="./Asset/CommandsPVWgifs/bothelp.gif" alt="Help command preview" width="100%" />
+    </td>
+    <td align="center" width="50%">
+      <strong>Notice Setup Walkthrough</strong><br />
+      <img src="./Asset/CommandsPVWgifs/dcsetup.gif" alt="Setup command preview" width="100%" />
+    </td>
+  </tr>
+</table>
 
 ## Features
 
