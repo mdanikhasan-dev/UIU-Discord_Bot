@@ -1,96 +1,109 @@
 # UIU Bot
 
-UIU Bot is a Discord utility for United International University communities. It checks the public UIU notice board, posts unseen notices to configured channels, exposes academic-calendar data, and provides a small set of server commands.
+UIU Bot keeps a Discord server close to the public information students check most often: university notices, current academic dates, and grade calculations. It also includes private text summarization and practical server utilities.
 
-This repository contains the bot itself. It is not an official UIU service and does not log in to UCAM or collect student portal credentials.
-
-## What the bot does
-
-- Reads the latest notices from `https://www.uiu.ac.bd/notice/`.
-- Returns the newest three notices with `/notices`.
-- Checks for new notice links every five minutes.
-- Keeps separate notice history for each configured Discord server.
-- Posts unseen notices oldest-first so the channel stays chronological.
-- Provides calendar, poll, latency, help, and setup commands.
+It is an independent project, not an official United International University service. It never asks for a UCAM login or password.
 
 ## Commands
 
-| Command | Access | Result |
+### Academic tools
+
+| Command | What it does |
+| --- | --- |
+| `/grade scale` | Shows UIU's official marks, letter grades, and grade points. |
+| `/grade marks` | Converts a percentage mark to the corresponding UIU grade. |
+| `/grade calculate` | Reads typed rows or a text/CSV file and calculates term GPAs, attempted and earned credits, and a portal-compatible CGPA estimate. |
+| `/grade project` | Projects a CGPA after a planned number of credits. |
+| `/grade target` | Calculates the GPA needed across planned credits to reach a target CGPA. |
+| `/grade template` | Downloads a synthetic CSV example with the accepted columns. |
+| `/calendar` | Shows the current verified undergraduate academic-calendar snapshot with the official source. |
+
+The grade calculator follows UIU's [published grading scale](https://www.uiu.ac.bd/academics/grading-performance-evaluation/). It excludes `W` and `I`, includes `F` in attempted credits, and treats the latest graded row for a repeated course code as the effective attempt. UIU's public [retake policy](https://www.uiu.ac.bd/academics/academic-information-policies/) does not document every UCAM replacement detail, so the result is deliberately labelled an estimate. UCAM remains authoritative.
+
+Accepted grade rows are:
+
+```text
+term,course,credits,grade
+261,CSE 1001,3,A-
+261,ENG 1001,3,B+
+```
+
+`course,credits,grade` is also accepted. Files may be UTF-8 `.csv`, `.tsv`, or `.txt`; rows copied from the seven-column UCAM results table are understood as well. Running courses are skipped.
+
+### Summaries
+
+`/summary` accepts pasted text or a UTF-8 `.txt`, `.md`, or `.csv` attachment.
+
+- `Private · processed locally` is the default. It uses an extractive summarizer inside the bot process and makes no external request.
+- `AI · sends text to Groq` is opt-in. The choice itself is explicit consent to send that command's text to the configured Groq API. If Groq is temporarily unavailable, the command clearly labels its local fallback.
+- The bot processes input in memory and does not write the input or result to its files or logs.
+
+The AI option is unavailable until the bot owner sets `GROQ_API_KEY`. The private engine always works without an AI key.
+
+### Notices and server utilities
+
+| Command | Access | What it does |
 | --- | --- | --- |
-| `/notices` | Everyone | Shows the latest three UIU notices. |
-| `/calendar` | Everyone | Shows the academic dates currently maintained by the project. |
-| `/poll` | Everyone | Creates a reaction poll with two to ten options. |
-| `/ping` | Everyone | Reports the bot's Discord latency. |
-| `/about` | Everyone | Shows bot information and its invite link. |
-| `/help` | Everyone | Opens a private command guide. |
-| `/setup #channel` | Administrator | Selects the channel for automatic notice posts. |
-| `/stop_notices` | Administrator | Stops automatic notice posts for that server. |
+| `/notices` | Everyone | Returns the latest three links from UIU's public notice board. |
+| `/poll` | Everyone | Creates a validated reaction poll with two to ten unique options. |
+| `/ping` | Everyone | Reports Discord gateway latency. |
+| `/help` | Everyone | Opens a private command directory. |
+| `/about` | Everyone | Shows the version, privacy boundaries, and a least-privilege invite link. |
+| `/setup #channel` | Administrator | Selects a channel for automatic notice delivery. |
+| `/stop_notices` | Administrator | Disables automatic notice delivery for that server. |
 
-## How notice delivery works
+The notice reader caches the public page briefly, checks automatically every five minutes, sends unseen links oldest-first, and records a link only after Discord accepts the message.
 
-1. An administrator runs `/setup` and chooses a text channel.
-2. The bot checks the public UIU notice page every five minutes.
-3. Each notice URL is compared with that server's local seen list.
-4. Unseen notices are posted to the configured channel.
-5. Successfully posted URLs are recorded so they are not sent again.
+## Run it
 
-If the UIU website cannot be reached, the current check ends and the next scheduled check tries again.
-
-## Run the bot
+Python 3.12 or newer is recommended.
 
 ```powershell
 git clone https://github.com/mdanikhasan-me/UIU-Discord_Bot.git
 cd UIU-Discord_Bot
-
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+Copy-Item .env.example .env
 ```
 
-Create `.env` in the repository root:
-
-```env
-DISCORD_TOKEN=your_bot_token_here
-```
-
-Start the process:
+Add the Discord bot token to `.env`, then start the process:
 
 ```powershell
 python main.py
 ```
 
-The token must remain local. `.env` is ignored by Git and should never be included in screenshots, issues, or commits.
+The bot must run on a connected machine or hosting service to stay online. `SYNC_COMMANDS=true` publishes the slash-command schema at startup; it can be disabled after a stable deployment.
 
-## Configuration
+## Runtime data
 
-The main runtime values are in `config/settings.py`:
+Automatic notice settings live in `data/notices_memory.json`. The file can contain Discord server and channel identifiers, so Git ignores it. Writes are schema-validated, locked within the process, flushed to disk, and atomically replaced. `data/notices_memory.example.json` documents the empty structure without real identifiers.
 
-| Setting | Purpose |
-| --- | --- |
-| `BOT_NAME` | Display name used by the bot. |
-| `BOT_VERSION` | Current application version. |
-| `NOTICE_CHECK_INTERVAL_MINUTES` | Delay between automatic notice checks. |
-| `MAX_SEEN_NOTICES` | Maximum stored notice URLs per server. |
+No grade rows, summary inputs, or summary outputs are stored by the application.
 
-Do not reduce the notice interval below five minutes. Repeatedly scraping the UIU site faster than necessary is not responsible or useful.
-
-## Repository layout
+## Project map
 
 ```text
-UIU-Discord_Bot/
-├── commands/       Discord slash-command cogs
-├── config/         Environment and runtime settings
-├── data/           Local notice-delivery state
-├── utils/          UIU notice and calendar fetchers
-├── main.py         Bot startup and command loading
-└── requirements.txt
+commands/   Discord command cogs and the notice-delivery loop
+config/     Validated environment and runtime settings
+services/   Grade math, summarization, and atomic notice state
+utils/      Public UIU notice fetching and calendar data
+tests/      Synthetic unit tests; no student or server data
+main.py     Startup, logging, extension loading, and command sync
 ```
 
-## Current limitations
+## Checks
 
-- Academic-calendar data is maintained manually and can become outdated.
-- Notice parsing depends on the public UIU page structure.
-- Runtime notice state is stored in JSON on the machine running the bot.
-- The bot must stay running on a connected machine or hosting service to remain online.
+```powershell
+python -m compileall -q main.py commands config services utils tests
+python -m unittest discover -s tests -v
+```
 
-Changes should be small enough to review, include a clear reason, and be tested before the live bot is restarted.
+GitHub Actions runs both checks on Python 3.12 and 3.13. The repository is a long-running Python service; it does not deploy the source tree to GitHub Pages.
+
+## Operational limits
+
+- The calendar is a verified Summer 2026 undergraduate snapshot, not a live UCAM feed. UIU's linked page is authoritative.
+- Notice parsing depends on the structure of UIU's public website and can require maintenance when that page changes.
+- Local JSON state is suitable for one bot process. Multi-instance hosting should replace it with transactional shared storage.
+- The Groq free-plan limits and model availability are controlled by Groq and may change.

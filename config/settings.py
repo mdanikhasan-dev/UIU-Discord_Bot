@@ -1,24 +1,51 @@
+"""Environment-backed configuration for UIU Bot."""
+
+from __future__ import annotations
+
 import os
-import sys
 
 from dotenv import load_dotenv
 
+
 load_dotenv()
 
-TOKEN: str = os.getenv("DISCORD_TOKEN", "")
 
-# Bot metadata
-BOT_NAME: str = "UIU_BOT"
-BOT_VERSION: str = "1.0.2"
-BOT_OWNER: str = "sawlper"
-BOT_DESCRIPTION: str = "Your own soft place for notices, updates, and community info."
+def _integer(name: str, default: int, *, minimum: int, maximum: int) -> int:
+    raw = os.getenv(name, str(default))
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise RuntimeError(f"{name} must be an integer.") from exc
+    if value < minimum or value > maximum:
+        raise RuntimeError(f"{name} must be from {minimum} to {maximum}.")
+    return value
 
-# ─ Notice loop settings
-# How often the notice-checking background loop runs, in minutes.
-# Do NOT set below 5 — it puts unnecessary load on the UIU website and
-# dramatically increases the chance of the bot's IP being blocked.
-NOTICE_CHECK_INTERVAL_MINUTES: int = 5
 
-# Maximum number of seen notice URLs to keep per server.
-# Keeps the JSON file from growing without bound after many months.
-MAX_SEEN_NOTICES: int = 200
+TOKEN = os.getenv("DISCORD_TOKEN", "").strip()
+BOT_NAME = "UIU Bot"
+BOT_VERSION = "2.0.0"
+BOT_OWNER = "sawlper"
+BOT_DESCRIPTION = "UIU notices, academic utilities, and community tools for Discord."
+
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip()
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant").strip()
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+SYNC_COMMANDS = os.getenv("SYNC_COMMANDS", "true").strip().lower() in {"1", "true", "yes"}
+
+NOTICE_CHECK_INTERVAL_MINUTES = _integer(
+    "NOTICE_CHECK_INTERVAL_MINUTES", 5, minimum=5, maximum=1440
+)
+MAX_SEEN_NOTICES = _integer("MAX_SEEN_NOTICES", 200, minimum=20, maximum=2000)
+NOTICE_STATE_PATH = os.getenv("NOTICE_STATE_PATH", "data/notices_memory.json")
+
+EXTENSIONS: tuple[str, ...] = (
+    "commands.about",
+    "commands.calendar",
+    "commands.grades",
+    "commands.help",
+    "commands.notices",
+    "commands.ping",
+    "commands.poll",
+    "commands.setup",
+    "commands.summary",
+)

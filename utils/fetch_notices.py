@@ -1,88 +1,78 @@
-"""
-utils/fetch_notices.py
-─────────────────────
-Fetches the latest notices from the UIU notice board page.
+"""Bounded, cached fetcher for the public UIU notice board."""
 
-Design decisions:
-- requests + BeautifulSoup is kept for HTML parsing (reliable, well-maintained).
-- The blocking requests.get() call is offloaded to a thread via
-  asyncio.to_thread() so it NEVER blocks the Discord event loop.
-- A hard timeout is enforced at the requests level so a slow server
-  cannot stall the thread indefinitely.
-- Any exception is caught and logged; the caller receives an empty list
-  rather than a raised exception, so the background loop never crashes.
-"""
+from __future__ import annotations
 
 import asyncio
-from typing import List, Tuple
+import logging
+import time
+from urllib.parse import urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup
 
-URL = "https://www.uiu.ac.bd/notice/"
-REQUEST_TIMEOUT_SECONDS = 15   # connect + read combined
+
+NOTICE_URL = "https://www.uiu.ac.bd/notice/"
+REQUEST_TIMEOUT = (5, 15)
+CACHE_SECONDS = 120
+MAX_NOTICES = 5
+
+logger = logging.getLogger(__name__)
+_cache_lock = asyncio.Lock()
+_cache_time = 0.0
+_cache_items: tuple[tuple[str, str], ...] = ()
 
 
-def _fetch_notices_sync() -> List[Tuple[str, str]]:
-    """
-    Blocking function — must only be called inside asyncio.to_thread().
-    Returns a list of (title, url) tuples for the first 5 notices found.
-    """
+def _fetch_notices_sync() -> tuple[tuple[str, str], ...]:
     response = requests.get(
-        URL,
-        timeout=REQUEST_TIMEOUT_SECONDS,
-        headers={"User-Agent": "UIUBot/1.0 (+https://github.com)"},
+        NOTICE_URL,
+        timeout=REQUEST_TIMEOUT,
+        headers={"User-Agent": "UIUBot/2.0 (public notice reader)"},
     )
     response.raise_for_status()
-
     soup = BeautifulSoup(response.content, "html.parser")
-    all_notices = soup.find_all("div", class_="details")
 
-    results: List[Tuple[str, str]] = []
-    for notice in all_notices[:5]:
+    results: list[tuple[str, str]] = []
+    for notice in soup.find_all("div", class_="details"):
         title_container = notice.find("div", class_="title")
-        if not title_container:
-            continue
-
-        title_tag = title_container.find("a")
+        title_tag = title_container.find("a") if title_container else None
         if not title_tag:
             continue
-
-        title_text: str = title_tag.get_text(strip=True)
-        title_link: str = title_tag.get("href", "")
-
-        if not title_link:
+        title = " ".join(title_tag.get_text(" ", strip=True).split())
+        href = title_tag.get("href")
+        if not title or not isinstance(href, str):
             continue
+        link = urljoin(NOTICE_URL, href)
+        parsed = urlparse(link)
+        if parsed.scheme != "https" or not parsed.hostname or not parsed.hostname.endswith("uiu.ac.bd"):
+            continue
+        results.append((title[:256], link))
+        if len(results) >= MAX_NOTICES:
+            break
+    return tuple(results)
 
-        if not title_link.startswith("http"):
-            title_link = "https://www.uiu.ac.bd" + title_link
 
-        results.append((title_text, title_link))
+async def fetch_notices(*, force_refresh: bool = False) -> list[tuple[str, str]]:
+    global _cache_items, _cache_time
+    now = time.monotonic()
+    if not force_refresh and _cache_items and now - _cache_time < CACHE_SECONDS:
+        return list(_cache_items)
 
-    return results
-
-
-async def fetch_notices() -> List[Tuple[str, str]]:
-    """
-    Async wrapper around _fetch_notices_sync().
-    Runs the blocking HTTP + parsing work in a thread pool executor so
-    the Discord gateway heartbeat is never starved.
-    """
-    try:
-        return await asyncio.to_thread(_fetch_notices_sync)
-    except requests.exceptions.Timeout:
-        print("[fetch_notices] Request timed out.")
-        return []
-    except requests.exceptions.ConnectionError as e:
-        print(f"[fetch_notices] Connection error: {e}")
-        return []
-    except requests.exceptions.HTTPError as e:
-        print(f"[fetch_notices] HTTP error {e.response.status_code}: {e}")
-        return []
-    except requests.exceptions.RequestException as e:
-        print(f"[fetch_notices] Request failed: {e}")
-        return []
-    except Exception as e:
-        # Catch-all: parsing errors, unexpected issues, etc.
-        print(f"[fetch_notices] Unexpected error: {type(e).__name__}: {e}")
-        return []
+    async with _cache_lock:
+        now = time.monotonic()
+        if not force_refresh and _cache_items and now - _cache_time < CACHE_SECONDS:
+            return list(_cache_items)
+        try:
+            items = await asyncio.to_thread(_fetch_notices_sync)
+        except requests.exceptions.Timeout:
+            logger.warning("UIU notice request timed out")
+            return list(_cache_items)
+        except requests.exceptions.RequestException as exc:
+            logger.warning("UIU notice request failed: %s", type(exc).__name__)
+            return list(_cache_items)
+        except Exception:
+            logger.exception("UIU notice response could not be parsed")
+            return list(_cache_items)
+        if items:
+            _cache_items = items
+            _cache_time = time.monotonic()
+        return list(items)
