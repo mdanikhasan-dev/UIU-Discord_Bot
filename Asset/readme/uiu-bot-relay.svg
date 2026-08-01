@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="520" viewBox="0 0 1400 520" role="img" aria-labelledby="title desc">
+  <title id="title">UIU Bot</title>
+  <desc id="desc">An editorial banner showing UIU Bot's three jobs: plan CGPA, follow campus updates, and use Discord utilities.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b0f14"/>
+      <stop offset="1" stop-color="#151b24"/>
+    </linearGradient>
+    <linearGradient id="signal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffad42"/>
+      <stop offset="1" stop-color="#f47b20"/>
+    </linearGradient>
+    <filter id="softGlow" x="-200%" y="-200%" width="400%" height="400%">
+      <feGaussianBlur stdDeviation="7" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <style>
+      .sans { font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+      .mono { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
+      .label { font-size: 18px; font-weight: 700; letter-spacing: 3px; }
+      .feature { font-size: 31px; font-weight: 750; }
+      .detail { font-size: 19px; font-weight: 450; }
+    </style>
+  </defs>
+
+  <rect width="1400" height="520" rx="28" fill="url(#background)"/>
+  <rect width="13" height="520" rx="6.5" fill="#f47b20"/>
+
+  <g class="sans" transform="translate(82 70)">
+    <text class="label" x="0" y="0" fill="#f47b20">INDEPENDENT DISCORD TOOL</text>
+    <text x="0" y="112" fill="#f8fafc" font-size="92" font-weight="850" letter-spacing="-4">UIU BOT</text>
+    <text x="0" y="178" fill="#f8fafc" font-size="39" font-weight="650">Campus, in the channel.</text>
+    <text x="0" y="224" fill="#9ba8b8" font-size="24">Notices without the tab hunt.</text>
+    <text x="0" y="258" fill="#9ba8b8" font-size="24">CGPA planning without the syntax.</text>
+
+    <g class="mono" transform="translate(0 344)" font-size="18">
+      <text x="0" y="0" fill="#ffad42">/cgpa calculator</text>
+      <text x="205" y="0" fill="#66717f">/</text>
+      <text x="234" y="0" fill="#dbe2ea">notices</text>
+      <text x="330" y="0" fill="#66717f">/</text>
+      <text x="360" y="0" fill="#dbe2ea">calendar</text>
+      <text x="466" y="0" fill="#66717f">/</text>
+      <text x="496" y="0" fill="#dbe2ea">summary</text>
+    </g>
+  </g>
+
+  <g class="sans" transform="translate(850 72)">
+    <line x1="12" y1="16" x2="12" y2="354" stroke="#39414d" stroke-width="2"/>
+    <line x1="12" y1="16" x2="12" y2="354" stroke="url(#signal)" stroke-width="3" stroke-dasharray="82 256">
+      <animate attributeName="stroke-dashoffset" from="338" to="-338" dur="4.8s" repeatCount="indefinite"/>
+    </line>
+
+    <g transform="translate(0 0)">
+      <circle cx="12" cy="16" r="7" fill="#f47b20"/>
+      <circle cx="12" cy="16" r="14" fill="#f47b20" opacity=".18">
+        <animate attributeName="r" values="10;20;10" dur="2.4s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values=".25;0;.25" dur="2.4s" repeatCount="indefinite"/>
+      </circle>
+      <text class="label" x="50" y="8" fill="#f47b20">01 / PLAN</text>
+      <text class="feature" x="50" y="47" fill="#f8fafc">CGPA + retakes</text>
+      <text class="detail" x="50" y="78" fill="#9ba8b8">Private, guided, and saved nowhere.</text>
+    </g>
+
+    <g transform="translate(0 142)">
+      <circle cx="12" cy="16" r="7" fill="#f47b20"/>
+      <text class="label" x="50" y="8" fill="#f47b20">02 / FOLLOW</text>
+      <text class="feature" x="50" y="47" fill="#f8fafc">Notices + dates</text>
+      <text class="detail" x="50" y="78" fill="#9ba8b8">Only unseen links, in chronological order.</text>
+    </g>
+
+    <g transform="translate(0 284)">
+      <circle cx="12" cy="16" r="7" fill="#f47b20"/>
+      <text class="label" x="50" y="8" fill="#f47b20">03 / USE</text>
+      <text class="feature" x="50" y="47" fill="#f8fafc">Summary + polls</text>
+      <text class="detail" x="50" y="78" fill="#9ba8b8">Small tools that belong beside the conversation.</text>
+    </g>
+  </g>
+
+  <g class="mono" transform="translate(850 466)" font-size="15" fill="#697686">
+    <circle cx="6" cy="-5" r="5" fill="#f47b20" filter="url(#softGlow)"/>
+    <text x="24" y="0">online signal / checks every 5 minutes</text>
+  </g>
+</svg>

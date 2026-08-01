@@ -27,11 +27,12 @@ TOPICS = {
         "CGPA calculator",
         (
             "Run `/cgpa calculator`. The calculator opens privately.\n\n"
-            "1. Add your current credits and CGPA if you want a cumulative projection.\n"
-            "2. Select **Add course**.\n"
-            "3. Choose the credits and expected grade.\n"
-            "4. Turn on **Retake** only when replacing an earlier grade.\n"
-            "5. Add more courses or select **Calculate**.\n\n"
+            "1. Use **Set standing** if you want a cumulative projection.\n"
+            "2. Choose **Add course** for a new course or **Add retake** to replace "
+            "an earlier grade.\n"
+            "3. Select the credits and expected grade. Retakes also ask for the "
+            "previous grade.\n"
+            "4. Add the rest of your courses, then choose **Calculate CGPA**.\n\n"
             "Nothing entered in the calculator is saved."
         ),
     ),

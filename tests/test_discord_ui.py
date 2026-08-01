@@ -67,6 +67,10 @@ class DiscordUiTests(unittest.TestCase):
             embed = help_embed("home", None)
             self.assertIn("/cgpa calculator", embed.description)
             self.assertLess(len(embed.description), 900)
+            calculator_help = help_embed("cgpa", None)
+            self.assertIn("Add retake", calculator_help.description)
+            self.assertIn("Calculate CGPA", calculator_help.description)
+            self.assertNotIn("Turn on **Retake**", calculator_help.description)
 
         asyncio.run(scenario())
 
