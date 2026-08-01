@@ -1,7 +1,10 @@
-from discord.ext import commands
-from discord import app_commands
-import discord
+"""Current official UIU undergraduate academic-calendar command."""
 
+import discord
+from discord import app_commands
+from discord.ext import commands
+
+from config.settings import BOT_ACCENT_COLOR
 from utils.fetch_calendar import fetch_academic_calendar
 
 
@@ -11,37 +14,29 @@ class Calendar(commands.Cog):
 
     @app_commands.command(
         name="calendar",
-        description="Shows the current academic calendar's important dates.",
+        description="Show verified dates from the current UIU undergraduate calendar",
     )
     async def academic_calendar(self, interaction: discord.Interaction) -> None:
-        await interaction.response.defer()
-
-        calendar_data = await fetch_academic_calendar()
-
-        if not calendar_data:
-            await interaction.followup.send(
-                "Error: The static calendar data is missing."
-            )
-            return
-
+        calendar = await fetch_academic_calendar()
+        lines = [
+            f"**{event['date']}** — {event['description']}"
+            for event in calendar["events"]
+        ]
         embed = discord.Embed(
-            title="📅 UIU Academic Calendar & Important Dates",
-            description=f"Important dates for the **{calendar_data['semester_title']}**.",
-            color=discord.Color.orange(),
+            title=calendar["semester_title"],
+            description="\n".join(lines),
+            url=calendar["source_url"],
+            color=BOT_ACCENT_COLOR,
         )
-
-        for event in calendar_data["events"]:
-            embed.add_field(
-                name=f"🗓️ {event['date']}",
-                value=event["description"],
-                inline=False,
-            )
-
+        embed.add_field(
+            name="Official calendar",
+            value=f"[Open the full calendar and footnotes]({calendar['source_url']})",
+            inline=False,
+        )
         embed.set_footer(
-            text=f"Last updated: {calendar_data['last_updated']} (Manually maintained)"
+            text=f"Snapshot verified {calendar['verified_on']}. UIU's page is authoritative."
         )
-
-        await interaction.followup.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
 
 
 async def setup(client: commands.Bot) -> None:

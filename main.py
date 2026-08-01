@@ -1,115 +1,101 @@
-import asyncio
-import os
+"""UIU Bot process entry point."""
+
+from __future__ import annotations
+
+import logging
 import sys
 
 import discord
+from discord import app_commands
 from discord.ext import commands
 
-from config.settings import BOT_NAME, BOT_VERSION, TOKEN
+from config.settings import BOT_NAME, BOT_VERSION, EXTENSIONS, LOG_LEVEL, SYNC_COMMANDS, TOKEN
 
 
-HELPER_MODULES = {"func_utils"}
+logging.basicConfig(
+    level=getattr(logging, LOG_LEVEL, logging.INFO),
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    stream=sys.stdout,
+)
+logging.getLogger("discord.gateway").setLevel(logging.WARNING)
+logging.getLogger("discord.ext.commands.bot").setLevel(logging.ERROR)
+logger = logging.getLogger("uiu_bot")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Intents
-# ─────────────────────────────────────────────────────────────────────────────
 intents = discord.Intents.default()
 intents.guilds = True
 intents.guild_messages = True
-# NOTE: Using Intents.all() was the original approach; it works but requires
-# the "Message Content" privileged intent to be enabled in the Dev Portal.
-# If you get permission errors, switch back to: intents = discord.Intents.all()
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Extension loader — skips invalid module names and logs failures cleanly
-# ─────────────────────────────────────────────────────────────────────────────
-async def load_extensions(client: commands.Bot) -> None:
-    commands_dir = "commands"
-    print("Loading extensions...")
-
-    for filename in os.listdir(f"./{commands_dir}"):
-        if not filename.endswith(".py") or filename.startswith("__"):
-            continue
-
-        module_name = filename[:-3]
-
-        if module_name in HELPER_MODULES:
-            print(f"  - Skipped {filename} (helper module)")
-            continue
-
-        # Skip files whose names are not valid Python identifiers
-        # (e.g. "func(1)_for(string).py" cannot be imported).
-        # These will still be present in the folder; they just will not
-        # be loaded as Discord extensions.
-        if not module_name.replace("_", "").isalnum():
-            print(f"  - Skipped {filename} (not a valid module name)")
-            continue
-
-        try:
-            await client.load_extension(f"{commands_dir}.{module_name}")
-            print(f"  - Loaded {filename}")
-        except commands.ExtensionAlreadyLoaded:
-            print(f"  - Already loaded {filename}, skipping")
-        except Exception as e:
-            print(f"  - Failed to load {filename}: {type(e).__name__}: {e}")
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Bot class
-# ─────────────────────────────────────────────────────────────────────────────
 class UIUBot(commands.Bot):
     def __init__(self) -> None:
         super().__init__(command_prefix="!", intents=intents)
-        # Prevents syncing on every reconnect within the same process lifetime.
-        self.synced_once: bool = False
 
     async def setup_hook(self) -> None:
-        """Called once when the bot first connects.  Load cogs and sync tree."""
-        await load_extensions(self)
+        failures: list[str] = []
+        for extension in EXTENSIONS:
+            try:
+                await self.load_extension(extension)
+                logger.info("Loaded %s", extension)
+            except Exception:
+                failures.append(extension)
+                logger.exception("Failed to load %s", extension)
+        if failures:
+            raise RuntimeError("Required extensions failed: " + ", ".join(failures))
 
-        # Only sync commands once per process start, not on every reconnect.
-        # Repeated syncs across many restarts can hit Discord rate limits.
-        if not self.synced_once:
+        if SYNC_COMMANDS:
             try:
                 synced = await self.tree.sync()
-                self.synced_once = True
-                print(f"Synced {len(synced)} slash command(s).")
-            except discord.HTTPException as e:
-                print(f"Failed to sync commands (HTTP {e.status}): {e.text}")
-            except Exception as e:
-                print(f"Failed to sync commands: {e}")
+                logger.info("Synced %d application command(s)", len(synced))
+            except discord.HTTPException:
+                logger.exception("Discord application-command sync failed")
 
     async def on_ready(self) -> None:
-        """Fired on every successful (re)connection to Discord."""
-        print(f"\nReady! Logged in as {self.user} (id={self.user.id})")
-        print("-" * 45)
-        # Do NOT do heavy work here — on_ready can fire multiple times on
-        # reconnect.  Heavy startup work belongs in setup_hook (runs once).
+        logger.info("%s v%s is online as %s", BOT_NAME, BOT_VERSION, self.user)
 
     async def on_error(self, event_method: str, *args, **kwargs) -> None:
-        import traceback
-        print(f"Unhandled error in event '{event_method}':")
-        traceback.print_exc()
+        logger.exception("Unhandled Discord event error in %s", event_method)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Entry point
-# ─────────────────────────────────────────────────────────────────────────────
 client = UIUBot()
 
 
-if __name__ == "__main__":
-    if not TOKEN:
-        print("ERROR: DISCORD_TOKEN is not set. Check your .env file.")
-        sys.exit(1)
+@client.tree.error
+async def on_app_command_error(
+    interaction: discord.Interaction, error: app_commands.AppCommandError
+) -> None:
+    original = getattr(error, "original", error)
+    if isinstance(original, app_commands.CommandOnCooldown):
+        message = f"That command is cooling down. Try again in {original.retry_after:.1f}s."
+    elif isinstance(original, app_commands.MissingPermissions):
+        message = "You do not have permission to use that command."
+    else:
+        logger.error(
+            "Unhandled application-command error: %s",
+            type(original).__name__,
+            exc_info=(type(original), original, original.__traceback__),
+        )
+        message = "The command could not be completed. The error was logged without your input."
+    if interaction.response.is_done():
+        await interaction.followup.send(message, ephemeral=True)
+    else:
+        await interaction.response.send_message(message, ephemeral=True)
 
-    print(f"{BOT_NAME} v{BOT_VERSION} is starting...")
+
+def main() -> int:
+    if not TOKEN:
+        logger.error("DISCORD_TOKEN is not set. Add it to the local .env file.")
+        return 1
+    logger.info("Starting %s v%s", BOT_NAME, BOT_VERSION)
     try:
         client.run(TOKEN, log_handler=None)
     except discord.LoginFailure:
-        print("ERROR: Discord login failed — invalid token.")
-        sys.exit(1)
+        logger.error("Discord rejected the configured token")
+        return 1
     except KeyboardInterrupt:
-        print("Bot stopped by user.")
+        logger.info("Bot stopped by user")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
