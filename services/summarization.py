@@ -24,6 +24,7 @@ class SummarizationError(ValueError):
 class SummaryResult:
     text: str
     engine: str
+    label: str = "Summary"
     input_truncated: bool = False
     fallback_reason: str | None = None
 
@@ -60,6 +61,14 @@ def summarize_locally(text: str, style: str = "concise") -> SummaryResult:
     sentences = _sentences(normalized)
     if not sentences:
         raise SummarizationError("The text does not contain readable sentences.")
+
+    if len(_words(normalized)) <= 45 and len(sentences) == 1:
+        return SummaryResult(
+            text=_polish_short_text(normalized),
+            engine="private local",
+            label="Cleaned brief",
+            input_truncated=truncated,
+        )
 
     target = {"concise": 3, "detailed": 7, "bullets": 5}[style]
     if len(sentences) <= target:
@@ -220,3 +229,56 @@ def _fit_output(text: str) -> str:
         return cleaned
     shortened = cleaned[: MAX_OUTPUT_CHARACTERS - 1].rsplit(" ", 1)[0]
     return shortened.rstrip(" ,;:") + "…"
+
+
+def _polish_short_text(text: str) -> str:
+    """Make already-brief input readable instead of pretending to shorten it."""
+
+    polished = " ".join(text.split())
+    contractions = {
+        r"\bcant\b": "can't",
+        r"\bdont\b": "don't",
+        r"\bdoesnt\b": "doesn't",
+        r"\bdidnt\b": "didn't",
+        r"\bwont\b": "won't",
+        r"\bim\b": "I'm",
+        r"\bive\b": "I've",
+    }
+    for pattern, replacement in contractions.items():
+        polished = re.sub(pattern, replacement, polished, flags=re.IGNORECASE)
+    polished = re.sub(r"\bi\b", "I", polished, flags=re.IGNORECASE)
+    first_person_verb = (
+        r"I\s+(?:am|have|had|want|wanted|dream|dreamed|feel|felt|can|can't|will|"
+        r"would|need|needed)\b"
+    )
+    polished = re.sub(
+        rf"\s+and\s+(?={first_person_verb})",
+        ". ",
+        polished,
+        flags=re.IGNORECASE,
+    )
+    polished = re.sub(
+        rf"\s+but\s+(?={first_person_verb})",
+        ", but ",
+        polished,
+        flags=re.IGNORECASE,
+    )
+    polished = re.sub(
+        rf"(?<=[a-z])(?<!and)(?<!but)\s+(?={first_person_verb})",
+        ". ",
+        polished,
+        flags=re.IGNORECASE,
+    )
+    polished = re.sub(
+        r"(?<!,)\s+but\s+", ", but ", polished, flags=re.IGNORECASE
+    )
+    polished = re.sub(
+        r"\bthe best of my version\b",
+        "the best version of myself",
+        polished,
+        flags=re.IGNORECASE,
+    )
+    polished = polished[0].upper() + polished[1:]
+    if polished[-1] not in ".!?।":
+        polished += "."
+    return polished

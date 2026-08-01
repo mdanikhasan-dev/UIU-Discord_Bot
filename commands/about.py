@@ -4,7 +4,13 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from config.settings import BOT_DESCRIPTION, BOT_NAME, BOT_OWNER, BOT_VERSION
+from config.settings import (
+    BOT_ACCENT_COLOR,
+    BOT_DESCRIPTION,
+    BOT_NAME,
+    BOT_OWNER,
+    BOT_VERSION,
+)
 
 
 class About(commands.Cog):
@@ -30,6 +36,7 @@ class About(commands.Cog):
         embed = discord.Embed(
             title=f"{BOT_NAME} · v{BOT_VERSION}",
             description=BOT_DESCRIPTION,
+            color=BOT_ACCENT_COLOR,
         )
         if self.client.user:
             embed.set_thumbnail(url=str(self.client.user.display_avatar.url))
@@ -39,8 +46,8 @@ class About(commands.Cog):
             name="Privacy",
             value=(
                 "The bot does not request UCAM credentials. Grade and summary inputs are "
-                "processed in memory and are not stored by the bot. Selecting `/summary`'s "
-                "AI engine sends that input to the configured provider."
+                "processed in memory and are not stored by the bot. Setting `/summary`'s "
+                "`use_ai` option to true sends that input to the configured provider."
             ),
             inline=False,
         )

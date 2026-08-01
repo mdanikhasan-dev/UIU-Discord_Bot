@@ -10,35 +10,26 @@ It is an independent project, not an official United International University se
 
 | Command | What it does |
 | --- | --- |
-| `/grade scale` | Shows UIU's official marks, letter grades, and grade points. |
-| `/grade marks` | Converts a percentage mark to the corresponding UIU grade. |
-| `/grade calculate` | Reads typed rows or a text/CSV file and calculates term GPAs, attempted and earned credits, and a portal-compatible CGPA estimate. |
-| `/grade project` | Projects a CGPA after a planned number of credits. |
-| `/grade target` | Calculates the GPA needed across planned credits to reach a target CGPA. |
-| `/grade template` | Downloads a synthetic CSV example with the accepted columns. |
+| `/cgpa calculator` | Opens a private interactive calculator with credit and grade dropdowns, retake support, and optional cumulative projection. |
 | `/calendar` | Shows the current verified undergraduate academic-calendar snapshot with the official source. |
 
-The grade calculator follows UIU's [published grading scale](https://www.uiu.ac.bd/academics/grading-performance-evaluation/). It excludes `W` and `I`, includes `F` in attempted credits, and treats the latest graded row for a repeated course code as the effective attempt. UIU's public [retake policy](https://www.uiu.ac.bd/academics/academic-information-policies/) does not document every UCAM replacement detail, so the result is deliberately labelled an estimate. UCAM remains authoritative.
+The calculator follows UIU's [published grading scale](https://www.uiu.ac.bd/academics/grading-performance-evaluation/). No formatted rows or files are required:
 
-Accepted grade rows are:
+1. Run `/cgpa calculator`.
+2. Add current completed credits and CGPA when a cumulative projection is needed.
+3. Select **Add course**, then choose credits and a grade.
+4. For a retake, turn on **Retake** and select the previous grade.
+5. Add the remaining courses and select **Calculate**.
 
-```text
-term,course,credits,grade
-261,CSE 1001,3,A-
-261,ENG 1001,3,B+
-```
-
-`course,credits,grade` is also accepted. Files may be UTF-8 `.csv`, `.tsv`, or `.txt`; rows copied from the seven-column UCAM results table are understood as well. Running courses are skipped.
+The session is ephemeral and is not written to the bot's files. Retake projections replace the previous course quality points without adding its credits twice. UIU's public [retake policy](https://www.uiu.ac.bd/academics/academic-information-policies/) does not document every UCAM implementation detail, so UCAM remains authoritative.
 
 ### Summaries
 
-`/summary` accepts pasted text or a UTF-8 `.txt`, `.md`, or `.csv` attachment.
+`/summary` accepts pasted text or a UTF-8 `.txt`, `.md`, or `.csv` attachment. The private local engine is the default. Already-short text is cleaned for readability instead of being returned as a fake summary.
 
-- `Private · processed locally` is the default. It uses an extractive summarizer inside the bot process and makes no external request.
-- `AI · sends text to Groq` is opt-in. The choice itself is explicit consent to send that command's text to the configured Groq API. If Groq is temporarily unavailable, the command clearly labels its local fallback.
+- `use_ai: false` keeps the text inside the bot process.
+- `use_ai: true` explicitly sends the text to the configured Groq API and is unavailable until the owner sets `GROQ_API_KEY`.
 - The bot processes input in memory and does not write the input or result to its files or logs.
-
-The AI option is unavailable until the bot owner sets `GROQ_API_KEY`. The private engine always works without an AI key.
 
 ### Notices and server utilities
 
@@ -47,7 +38,7 @@ The AI option is unavailable until the bot owner sets `GROQ_API_KEY`. The privat
 | `/notices` | Everyone | Returns the latest three links from UIU's public notice board. |
 | `/poll` | Everyone | Creates a validated reaction poll with two to ten unique options. |
 | `/ping` | Everyone | Reports Discord gateway latency. |
-| `/help` | Everyone | Opens a private command directory. |
+| `/help` | Everyone | Opens a private, navigable guide organized by task. |
 | `/about` | Everyone | Shows the version, privacy boundaries, and a least-privilege invite link. |
 | `/setup #channel` | Administrator | Selects a channel for automatic notice delivery. |
 | `/stop_notices` | Administrator | Disables automatic notice delivery for that server. |

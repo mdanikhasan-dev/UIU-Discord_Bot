@@ -8,7 +8,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands, tasks
 
-from config.settings import NOTICE_CHECK_INTERVAL_MINUTES
+from config.settings import BOT_ACCENT_COLOR, NOTICE_CHECK_INTERVAL_MINUTES
 from services.notice_store import NoticeStoreError, notice_store
 from utils.fetch_notices import fetch_notices
 
@@ -39,6 +39,7 @@ class Notices(commands.Cog):
         embed = discord.Embed(
             title="Latest UIU notices",
             description="Links open the original notice on UIU's website.",
+            color=BOT_ACCENT_COLOR,
         )
         if self.client.user:
             embed.set_thumbnail(url=str(self.client.user.display_avatar.url))
@@ -81,6 +82,7 @@ class Notices(commands.Cog):
                     title=f"New UIU notice: {title}"[:256],
                     description="A new item appeared on the public UIU notice board.",
                     url=link,
+                    color=BOT_ACCENT_COLOR,
                 )
                 if self.client.user:
                     embed.set_thumbnail(url=str(self.client.user.display_avatar.url))

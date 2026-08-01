@@ -6,6 +6,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from config.settings import BOT_ACCENT_COLOR
 
 POLL_EMOJIS = ("1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟")
 
@@ -77,6 +78,7 @@ class Poll(commands.Cog):
         embed = discord.Embed(
             title=discord.utils.escape_mentions(clean_question),
             description="\n\n".join(option_lines),
+            color=BOT_ACCENT_COLOR,
         )
         embed.set_footer(text=f"Started by {interaction.user.display_name}")
         message = await interaction.followup.send(

@@ -43,6 +43,21 @@ class LocalSummarizerTests(unittest.TestCase):
     def test_input_limit_is_not_zero(self) -> None:
         self.assertGreaterEqual(MAX_INPUT_CHARACTERS, 10_000)
 
+    def test_short_run_on_text_is_cleaned_instead_of_echoed(self) -> None:
+        source = (
+            "i have no life i dreamed of having free time and i want to be the best "
+            "of my version but i cant"
+        )
+        result = summarize_locally(source, "concise")
+        self.assertEqual(result.label, "Cleaned brief")
+        self.assertNotEqual(result.text, source)
+        self.assertIn("I can't", result.text)
+        self.assertIn("best version of myself", result.text)
+        self.assertNotIn("and.", result.text)
+        self.assertNotIn("but.", result.text)
+        self.assertNotIn(",,", result.text)
+        self.assertTrue(result.text.endswith("."))
+
     def test_ai_engine_requires_owner_configuration(self) -> None:
         with self.assertRaisesRegex(SummarizationError, "GROQ_API_KEY"):
             asyncio.run(

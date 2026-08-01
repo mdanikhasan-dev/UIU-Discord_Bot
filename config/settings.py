@@ -26,6 +26,7 @@ BOT_NAME = "UIU Bot"
 BOT_VERSION = "2.0.0"
 BOT_OWNER = "sawlper"
 BOT_DESCRIPTION = "UIU notices, academic utilities, and community tools for Discord."
+BOT_ACCENT_COLOR = 0xFF8A00
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip()
 GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant").strip()
@@ -41,7 +42,7 @@ NOTICE_STATE_PATH = os.getenv("NOTICE_STATE_PATH", "data/notices_memory.json")
 EXTENSIONS: tuple[str, ...] = (
     "commands.about",
     "commands.calendar",
-    "commands.grades",
+    "commands.cgpa",
     "commands.help",
     "commands.notices",
     "commands.ping",

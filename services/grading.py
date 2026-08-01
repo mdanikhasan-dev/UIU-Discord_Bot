@@ -96,6 +96,26 @@ class AcademicSummary:
         return self.portal_cgpa >= MINIMUM_CGPA
 
 
+@dataclass(frozen=True)
+class PlannedCourse:
+    credits: Decimal
+    grade: str
+    previous_grade: str | None = None
+
+    @property
+    def is_retake(self) -> bool:
+        return self.previous_grade is not None
+
+
+@dataclass(frozen=True)
+class CgpaProjection:
+    term_gpa: Decimal
+    term_credits: Decimal
+    projected_cgpa: Decimal | None
+    cumulative_credits: Decimal | None
+    retake_count: int
+
+
 def round_gpa(value: Decimal) -> Decimal:
     return value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
@@ -357,6 +377,85 @@ def required_gpa(
         - current_cgpa * completed_credits
     ) / planned_credits
     return round_gpa(max(Decimal("0"), required))
+
+
+def calculate_cgpa_plan(
+    courses: Sequence[PlannedCourse],
+    *,
+    current_cgpa: Decimal | None = None,
+    completed_credits: Decimal | None = None,
+) -> CgpaProjection:
+    """Calculate a trimester GPA and optional cumulative projection.
+
+    Retakes replace the previous course quality points and do not add the
+    course credits to the cumulative denominator a second time.
+    """
+
+    if not courses:
+        raise ValueError("Add at least one course before calculating.")
+    if (current_cgpa is None) != (completed_credits is None):
+        raise ValueError("Current CGPA and completed credits must be provided together.")
+    if len(courses) > 10:
+        raise ValueError("A maximum of 10 courses is allowed per calculation.")
+
+    term_credits = Decimal("0")
+    term_quality = Decimal("0")
+    retake_credits = Decimal("0")
+    retake_count = 0
+    for course in courses:
+        if course.credits <= 0 or course.credits > 12:
+            raise ValueError("Each course must have between 0.5 and 12 credits.")
+        grade = normalize_grade(course.grade)
+        if grade not in GRADE_POINTS:
+            raise ValueError("Planned courses require an A–F grade.")
+        term_credits += course.credits
+        term_quality += course.credits * GRADE_POINTS[grade]
+        if course.previous_grade is not None:
+            previous = normalize_grade(course.previous_grade)
+            if previous not in GRADE_POINTS:
+                raise ValueError("A retake requires the previous A–F grade.")
+            retake_credits += course.credits
+            retake_count += 1
+
+    term_gpa = round_gpa(term_quality / term_credits)
+    if current_cgpa is None or completed_credits is None:
+        if retake_count:
+            raise ValueError("Add current standing before including a retake.")
+        return CgpaProjection(term_gpa, term_credits, None, None, 0)
+
+    _validate_gpa(current_cgpa, "Current CGPA")
+    _validate_credit_total(completed_credits, "Completed credits", allow_zero=True)
+    if retake_credits > completed_credits:
+        raise ValueError("Retake credits cannot exceed completed credits.")
+
+    cumulative_quality = current_cgpa * completed_credits
+    cumulative_credits = completed_credits
+    for course in courses:
+        new_point = GRADE_POINTS[normalize_grade(course.grade)]
+        if course.previous_grade is None:
+            cumulative_quality += course.credits * new_point
+            cumulative_credits += course.credits
+        else:
+            old_point = GRADE_POINTS[normalize_grade(course.previous_grade)]
+            cumulative_quality += course.credits * (new_point - old_point)
+
+    if cumulative_credits == 0:
+        projected = term_gpa
+        cumulative_credits = term_credits
+    else:
+        maximum_quality = Decimal("4") * cumulative_credits
+        if cumulative_quality < 0 or cumulative_quality > maximum_quality:
+            raise ValueError(
+                "The retake details do not fit the supplied current standing."
+            )
+        projected = round_gpa(cumulative_quality / cumulative_credits)
+    return CgpaProjection(
+        term_gpa,
+        term_credits,
+        projected,
+        cumulative_credits,
+        retake_count,
+    )
 
 
 def _validate_gpa(value: Decimal, label: str) -> None:

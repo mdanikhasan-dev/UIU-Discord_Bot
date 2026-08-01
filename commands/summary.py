@@ -1,4 +1,4 @@
-"""Private `/summary` command with local-first processing."""
+"""A simple private summarizer with optional, explicit cloud AI use."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from config.settings import GROQ_API_KEY, GROQ_MODEL
+from config.settings import BOT_ACCENT_COLOR, GROQ_API_KEY, GROQ_MODEL
 from services.summarization import SummarizationError, summarize
 
 
@@ -20,18 +20,18 @@ async def _read_input(
     text: str | None, attachment: discord.Attachment | None
 ) -> str:
     if bool(text) == bool(attachment):
-        raise SummarizationError("Provide either pasted text or one attachment, not both.")
+        raise SummarizationError("Paste text or attach one file—not both.")
     if text:
         return text
     assert attachment is not None
     if Path(attachment.filename).suffix.lower() not in ALLOWED_ATTACHMENTS:
-        raise SummarizationError("Attachment must be a .txt, .md, or .csv file.")
+        raise SummarizationError("Use a .txt, .md, or .csv file.")
     if attachment.size > MAX_ATTACHMENT_BYTES:
-        raise SummarizationError("Attachment is too large. The limit is 128 KB.")
+        raise SummarizationError("The attachment limit is 128 KB.")
     try:
         return (await attachment.read()).decode("utf-8-sig")
     except UnicodeDecodeError as exc:
-        raise SummarizationError("Attachment must use UTF-8 text encoding.") from exc
+        raise SummarizationError("The attachment must use UTF-8 text encoding.") from exc
 
 
 class Summary(commands.Cog):
@@ -40,43 +40,28 @@ class Summary(commands.Cog):
 
     @app_commands.command(
         name="summary",
-        description="Summarize pasted text or a text file without saving it",
+        description="Turn pasted text or a text file into a clear private brief",
     )
     @app_commands.describe(
-        text="Text to summarize (use an attachment for longer content)",
-        attachment="A UTF-8 .txt, .md, or .csv file (maximum 128 KB)",
-        style="Length and format of the summary",
-        engine="Private stays local; AI explicitly sends text to Groq",
+        text="Text to summarize",
+        attachment="Optional UTF-8 .txt, .md, or .csv file",
+        use_ai="Send this text to Groq for an AI-written summary",
     )
-    @app_commands.choices(
-        style=[
-            app_commands.Choice(name="Concise", value="concise"),
-            app_commands.Choice(name="Detailed", value="detailed"),
-            app_commands.Choice(name="Bullet points", value="bullets"),
-        ],
-        engine=[
-            app_commands.Choice(name="Private · processed locally", value="private"),
-            app_commands.Choice(name="AI · sends text to Groq", value="ai"),
-        ],
-    )
-    @app_commands.checks.cooldown(2, 20.0, key=lambda i: i.user.id)
+    @app_commands.checks.cooldown(2, 20.0, key=lambda interaction: interaction.user.id)
     async def summary(
         self,
         interaction: discord.Interaction,
         text: str | None = None,
         attachment: discord.Attachment | None = None,
-        style: app_commands.Choice[str] | None = None,
-        engine: app_commands.Choice[str] | None = None,
+        use_ai: bool = False,
     ) -> None:
         await interaction.response.defer(ephemeral=True, thinking=True)
-        style_value = style.value if style else "concise"
-        engine_value = engine.value if engine else "private"
         try:
             supplied = await _read_input(text, attachment)
             result = await summarize(
                 supplied,
-                style_value,
-                engine_value,
+                "concise",
+                "ai" if use_ai else "private",
                 groq_api_key=GROQ_API_KEY,
                 groq_model=GROQ_MODEL,
             )
@@ -84,14 +69,29 @@ class Summary(commands.Cog):
             await interaction.followup.send(f"Could not summarize: {exc}", ephemeral=True)
             return
 
-        notes = [f"Engine: {result.engine}", "Input and summary were not saved by the bot."]
+        embed = discord.Embed(
+            title=result.label,
+            description=discord.utils.escape_mentions(result.text),
+            color=BOT_ACCENT_COLOR,
+        )
         if result.input_truncated:
-            notes.append("Only the first 50,000 characters were processed.")
+            embed.add_field(
+                name="Input limit",
+                value="Only the first 50,000 characters were processed.",
+                inline=False,
+            )
         if result.fallback_reason:
-            notes.append(f"AI was unavailable; local fallback used: {result.fallback_reason}")
-        safe_summary = discord.utils.escape_mentions(result.text)
+            embed.add_field(
+                name="Local fallback used",
+                value=result.fallback_reason,
+                inline=False,
+            )
+        privacy = "not saved"
+        if use_ai:
+            privacy = "sent to Groq for this request · not saved by UIU Bot"
+        embed.set_footer(text=f"{result.engine} · {privacy}")
         await interaction.followup.send(
-            f"**Summary**\n{safe_summary}\n\n*{' '.join(notes)}*",
+            embed=embed,
             ephemeral=True,
             allowed_mentions=discord.AllowedMentions.none(),
         )

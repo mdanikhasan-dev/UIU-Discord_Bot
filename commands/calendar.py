@@ -4,6 +4,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from config.settings import BOT_ACCENT_COLOR
 from utils.fetch_calendar import fetch_academic_calendar
 
 
@@ -25,6 +26,7 @@ class Calendar(commands.Cog):
             title=calendar["semester_title"],
             description="\n".join(lines),
             url=calendar["source_url"],
+            color=BOT_ACCENT_COLOR,
         )
         embed.add_field(
             name="Official calendar",

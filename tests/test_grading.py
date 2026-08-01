@@ -3,7 +3,9 @@ import unittest
 
 from services.grading import (
     CourseAttempt,
+    PlannedCourse,
     calculate_academic_summary,
+    calculate_cgpa_plan,
     grade_for_mark,
     parse_course_rows,
     project_cgpa,
@@ -131,6 +133,34 @@ class ProjectionTests(unittest.TestCase):
             Decimal("2.50"), Decimal("30"), Decimal("15"), Decimal("3.00")
         )
         self.assertEqual(result, Decimal("4.00"))
+
+    def test_interactive_plan_without_current_standing(self) -> None:
+        result = calculate_cgpa_plan(
+            (
+                PlannedCourse(Decimal("3"), "A"),
+                PlannedCourse(Decimal("3"), "B"),
+            )
+        )
+        self.assertEqual(result.term_gpa, Decimal("3.50"))
+        self.assertIsNone(result.projected_cgpa)
+
+    def test_interactive_plan_projects_cumulative_cgpa(self) -> None:
+        result = calculate_cgpa_plan(
+            tuple(PlannedCourse(Decimal("3"), "A") for _ in range(5)),
+            current_cgpa=Decimal("2.50"),
+            completed_credits=Decimal("30"),
+        )
+        self.assertEqual(result.projected_cgpa, Decimal("3.00"))
+
+    def test_retake_replaces_old_quality_points_without_adding_credits(self) -> None:
+        result = calculate_cgpa_plan(
+            (PlannedCourse(Decimal("3"), "A", previous_grade="F"),),
+            current_cgpa=Decimal("2.00"),
+            completed_credits=Decimal("30"),
+        )
+        self.assertEqual(result.projected_cgpa, Decimal("2.40"))
+        self.assertEqual(result.cumulative_credits, Decimal("30"))
+        self.assertEqual(result.retake_count, 1)
 
 
 if __name__ == "__main__":
