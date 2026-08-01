@@ -1,49 +1,76 @@
-# UIU Bot
+<p align="center">
+  <img src="./Asset/readme/uiu-bot-command-center.webp" alt="UIU Bot project overview supplied by the maintainer" width="100%" />
+</p>
 
-UIU Bot keeps a Discord server close to the public information students check most often: university notices, current academic dates, and grade calculations. It also includes private text summarization and practical server utilities.
+<h1 align="center">UIU Bot</h1>
 
-It is an independent project, not an official United International University service. It never asks for a UCAM login or password.
+<p align="center">
+  A Discord utility for UIU notices, academic planning, and the small server tasks that should not require another website.
+</p>
 
-## Commands
+<p align="center">
+  <a href="#cgpa-calculator">CGPA calculator</a> ·
+  <a href="#notices-that-arrive-in-order">Notice delivery</a> ·
+  <a href="#the-command-desk">Commands</a> ·
+  <a href="#run-it">Setup</a>
+</p>
 
-### Academic tools
+> The opening board is the original visual supplied by the maintainer. Some dates and interface examples inside that artwork are historical; the live behavior documented below is current.
 
-| Command | What it does |
-| --- | --- |
-| `/cgpa calculator` | Opens a private interactive calculator with credit and grade dropdowns, retake support, and optional cumulative projection. |
-| `/calendar` | Shows the current verified undergraduate academic-calendar snapshot with the official source. |
+UIU Bot is independent software. It is not an official United International University service, does not sign in to UCAM, and never asks for a student password.
 
-The calculator follows UIU's [published grading scale](https://www.uiu.ac.bd/academics/grading-performance-evaluation/). No formatted rows or files are required:
+## CGPA calculator
 
-1. Run `/cgpa calculator`.
-2. Add current completed credits and CGPA when a cumulative projection is needed.
-3. Select **Add course**, then choose credits and a grade.
-4. For a retake, select **Add retake**, then choose the credits, new grade, and previous grade.
-5. Add the remaining courses and select **Calculate**.
+The calculator is a private Discord session, not a CSV parser or a wall of slash-command options.
 
-The session is ephemeral and is not written to the bot's files. Retake projections replace the previous course quality points without adding its credits twice. UIU's public [retake policy](https://www.uiu.ac.bd/academics/academic-information-policies/) does not document every UCAM implementation detail, so UCAM remains authoritative.
+```text
+/cgpa calculator
+       │
+       ├── Add course  → credits → expected grade
+       ├── Add retake  → credits → new grade → previous grade
+       ├── Set standing → completed credits → current CGPA
+       └── Calculate CGPA
+```
 
-### Summaries
+The panel keeps regular courses and retakes separate, shows each course in its own readable block, and calculates both the trimester GPA and projected cumulative CGPA. Retakes replace the previous course quality points without adding the course credits twice.
 
-`/summary` accepts pasted text or a UTF-8 `.txt`, `.md`, or `.csv` attachment. The private local engine is the default. Already-short text is cleaned for readability instead of being returned as a fake summary.
+The calculation uses UIU's [published grading scale](https://www.uiu.ac.bd/academics/grading-performance-evaluation/). UIU's public [academic policy](https://www.uiu.ac.bd/academics/academic-information-policies/) does not document every internal UCAM replacement rule, so UCAM remains the authoritative result.
 
-- `use_ai: false` keeps the text inside the bot process.
-- `use_ai: true` explicitly sends the text to the configured Groq API and is unavailable until the owner sets `GROQ_API_KEY`.
-- The bot processes input in memory and does not write the input or result to its files or logs.
+Nothing entered in the calculator is written to disk.
 
-### Notices and server utilities
+## Notices that arrive in order
 
-| Command | Access | What it does |
+An administrator chooses a channel once with `/setup`. From there the bot checks UIU's public notice board every five minutes, compares each link with that server's local history, and posts only unseen notices.
+
+```text
+UIU public notice board
+          ↓
+brief shared cache
+          ↓
+server-specific seen history
+          ↓
+configured Discord channel
+```
+
+Notices are delivered oldest-first when several appear together. A link is recorded only after Discord accepts the message, so a failed send is not silently treated as delivered.
+
+## The command desk
+
+| Need | Command | What appears in Discord |
 | --- | --- | --- |
-| `/notices` | Everyone | Returns the latest three links from UIU's public notice board. |
-| `/poll` | Everyone | Creates a validated reaction poll with two to ten unique options. |
-| `/ping` | Everyone | Reports Discord gateway latency. |
-| `/help` | Everyone | Opens a private, navigable guide organized by task. |
-| `/about` | Everyone | Shows the version, privacy boundaries, and a least-privilege invite link. |
-| `/setup #channel` | Administrator | Selects a channel for automatic notice delivery. |
-| `/stop_notices` | Administrator | Disables automatic notice delivery for that server. |
+| Plan a trimester | `/cgpa calculator` | Private interactive credit, grade, and retake controls |
+| Read current notices | `/notices` | The latest three links from UIU's public board |
+| Check academic dates | `/calendar` | Verified undergraduate dates with the official source |
+| Condense text | `/summary` | A private cleaned brief or summary |
+| Start a vote | `/poll` | A validated reaction poll with 2–10 options |
+| Find a feature | `/help` | A private topic-based guide instead of a command dump |
+| Check the bot | `/ping` | Online status and Discord gateway latency |
+| Configure delivery | `/setup #channel` | Administrator-only notice-channel setup |
+| Stop delivery | `/stop_notices` | Administrator-only delivery shutdown |
 
-The notice reader caches the public page briefly, checks automatically every five minutes, sends unseen links oldest-first, and records a link only after Discord accepts the message.
+### Summary privacy
+
+`/summary` processes text locally unless `use_ai` is explicitly set to `true`. Local input stays inside the bot process. The AI option sends that request to Groq and is unavailable until the owner supplies `GROQ_API_KEY`. UIU Bot does not save summary input or output.
 
 ## Run it
 
@@ -58,43 +85,45 @@ python -m pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
 
-Add the Discord bot token to `.env`, then start the process:
+Add the Discord token to `.env`, then start the process:
 
 ```powershell
 python main.py
 ```
 
-The bot must run on a connected machine or hosting service to stay online. `SYNC_COMMANDS=true` publishes the slash-command schema at startup; it can be disabled after a stable deployment.
+The default `.env.example` also documents the optional Groq model, log level, command-sync switch, notice interval, state path, and seen-notice limit. Secrets belong only in `.env`; that file is ignored by Git.
 
-## Runtime data
+## Runtime boundaries
 
-Automatic notice settings live in `data/notices_memory.json`. The file can contain Discord server and channel identifiers, so Git ignores it. Writes are schema-validated, locked within the process, flushed to disk, and atomically replaced. `data/notices_memory.example.json` documents the empty structure without real identifiers.
+- `data/notices_memory.json` contains live Discord server/channel state and is ignored by Git.
+- Grade entries and summary text exist only for the duration of their private interaction.
+- The current calendar is a verified Summer 2026 undergraduate snapshot, not a UCAM feed.
+- Local JSON state supports one bot process. Multi-instance hosting needs shared transactional storage.
+- The bot must remain running on a connected machine or hosting service to stay online.
 
-No grade rows, summary inputs, or summary outputs are stored by the application.
-
-## Project map
+<details>
+<summary><strong>Repository map and checks</strong></summary>
 
 ```text
-commands/   Discord command cogs and the notice-delivery loop
+commands/   Discord commands and interactive views
 config/     Validated environment and runtime settings
-services/   Grade math, summarization, and atomic notice state
+services/   CGPA math, summarization, and atomic notice state
 utils/      Public UIU notice fetching and calendar data
-tests/      Synthetic unit tests; no student or server data
+tests/      Synthetic tests without student or server data
 main.py     Startup, logging, extension loading, and command sync
 ```
-
-## Checks
 
 ```powershell
 python -m compileall -q main.py commands config services utils tests
 python -m unittest discover -s tests -v
 ```
 
-GitHub Actions runs both checks on Python 3.12 and 3.13. The repository is a long-running Python service; it does not deploy the source tree to GitHub Pages.
+GitHub Actions runs the same compilation and test suite on Python 3.12 and 3.13.
 
-## Operational limits
+</details>
 
-- The calendar is a verified Summer 2026 undergraduate snapshot, not a live UCAM feed. UIU's linked page is authoritative.
-- Notice parsing depends on the structure of UIU's public website and can require maintenance when that page changes.
-- Local JSON state is suitable for one bot process. Multi-instance hosting should replace it with transactional shared storage.
-- The Groq free-plan limits and model availability are controlled by Groq and may change.
+---
+
+<p align="center">
+  Built for UIU Discord communities. Maintained independently.
+</p>
