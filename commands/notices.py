@@ -29,11 +29,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands, tasks
 
-from config.settings import (
-    BOT_THUMBNAIL_URL,
-    MAX_SEEN_NOTICES,
-    NOTICE_CHECK_INTERVAL_MINUTES,
-)
+from config.settings import MAX_SEEN_NOTICES, NOTICE_CHECK_INTERVAL_MINUTES
 from utils.fetch_notices import fetch_notices
 
 MEMORY_FILE = "data/notices_memory.json"
@@ -96,7 +92,8 @@ class Notices(commands.Cog):
             description="Here are the top 3 notices from the board.",
             color=0xCCCCCC,
         )
-        embed.set_thumbnail(url=BOT_THUMBNAIL_URL)
+        if self.client.user:
+            embed.set_thumbnail(url=str(self.client.user.display_avatar.url))
 
         for title, link in notices_list[:3]:
             embed.add_field(name=title, value=f"[Click to Read]({link})", inline=False)
@@ -144,7 +141,8 @@ class Notices(commands.Cog):
                     color=0xCCCCCC,
                     url=link,
                 )
-                embed.set_thumbnail(url=BOT_THUMBNAIL_URL)
+                if self.client.user:
+                    embed.set_thumbnail(url=str(self.client.user.display_avatar.url))
                 embed.add_field(
                     name="Click to Read",
                     value=f"[Read the full notice here]({link})",

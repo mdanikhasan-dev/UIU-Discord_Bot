@@ -1,55 +1,42 @@
-<p align="center">
-  <img src="./Asset/readme/readme-header.svg" alt="UIU BOT — campus notice courier for Discord" width="100%" />
-</p>
+# UIU Bot
 
-<p align="center">
-  <code>UIU NOTICE BOARD</code>&nbsp;&nbsp;→&nbsp;&nbsp;<code>5 MINUTE WATCH</code>&nbsp;&nbsp;→&nbsp;&nbsp;<code>YOUR DISCORD</code>
-</p>
+UIU Bot is a Discord utility for United International University communities. It checks the public UIU notice board, posts unseen notices to configured channels, exposes academic-calendar data, and provides a small set of server commands.
 
-## A notice should not depend on who checked the website this morning.
+This repository contains the bot itself. It is not an official UIU service and does not log in to UCAM or collect student portal credentials.
 
-UIU BOT keeps the university notice board close to the conversation. An admin chooses a Discord channel once; from there, the bot checks for new UIU notices, remembers what that server has already received, and sends only the fresh links.
+## What the bot does
 
-It is a small bot with a very specific job. That is the point.
+- Reads the latest notices from `https://www.uiu.ac.bd/notice/`.
+- Returns the newest three notices with `/notices`.
+- Checks for new notice links every five minutes.
+- Keeps separate notice history for each configured Discord server.
+- Posts unseen notices oldest-first so the channel stays chronological.
+- Provides calendar, poll, latency, help, and setup commands.
 
-<p align="center">
-  <img src="./Asset/readme/bot-profile.png" alt="UIU BOT Discord profile console with the original campus courier identity" width="100%" />
-</p>
+## Commands
 
-<p align="center">
-  <sub>COURIER–01 / an original identity built around the bot’s one job: carrying campus signals.</sub>
-</p>
+| Command | Access | Result |
+| --- | --- | --- |
+| `/notices` | Everyone | Shows the latest three UIU notices. |
+| `/calendar` | Everyone | Shows the academic dates currently maintained by the project. |
+| `/poll` | Everyone | Creates a reaction poll with two to ten options. |
+| `/ping` | Everyone | Reports the bot's Discord latency. |
+| `/about` | Everyone | Shows bot information and its invite link. |
+| `/help` | Everyone | Opens a private command guide. |
+| `/setup #channel` | Administrator | Selects the channel for automatic notice posts. |
+| `/stop_notices` | Administrator | Stops automatic notice posts for that server. |
 
-## The notice board, translated for Discord
+## How notice delivery works
 
-This is the job as the bot understands it: read the public board, compare links against that server’s memory, then deliver the ones it has not seen.
+1. An administrator runs `/setup` and chooses a text channel.
+2. The bot checks the public UIU notice page every five minutes.
+3. Each notice URL is compared with that server's local seen list.
+4. Unseen notices are posted to the configured channel.
+5. Successfully posted URLs are recorded so they are not sent again.
 
-<p align="center">
-  <img src="./Asset/readme/notice-board.svg" alt="Engineered UIU BOT notice board and Discord dispatch interface" width="100%" />
-</p>
+If the UIU website cannot be reached, the current check ends and the next scheduled check tries again.
 
-The board above is an interface illustration, not a claim that those example notices are live. Every real notification links back to the original UIU page, where the authoritative details belong.
-
-## Eight commands. Two levels of control.
-
-<p align="center">
-  <img src="./Asset/readme/command-atlas.svg" alt="Visual atlas of UIU BOT public and administrator commands" width="100%" />
-</p>
-
-Public commands answer the everyday questions. The two delivery controls stay with server administrators.
-
-| Command | What comes back |
-| --- | --- |
-| `/notices` | The latest three items from the UIU notice board. |
-| `/calendar` | The dates currently maintained in the project’s academic calendar data. |
-| `/poll` | A reaction poll with two to ten options. |
-| `/ping` | The bot’s current Discord latency. |
-| `/about` | Bot details and its invite link. |
-| `/help` | A private command guide inside Discord. |
-| `/setup #channel` | **Admin:** selects the destination for automatic notice posts. |
-| `/stop_notices` | **Admin:** stops automatic posting for that server. |
-
-## Put it in a server
+## Run the bot
 
 ```powershell
 git clone https://github.com/mdanikhasan-me/UIU-Discord_Bot.git
@@ -60,64 +47,50 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-Create `.env` in the project root and add the token from your Discord application:
+Create `.env` in the repository root:
 
 ```env
 DISCORD_TOKEN=your_bot_token_here
 ```
 
-Then start the bot:
+Start the process:
 
 ```powershell
 python main.py
 ```
 
-> `.env` is ignored by Git. Keep the token out of screenshots, issues, and commits.
+The token must remain local. `.env` is ignored by Git and should never be included in screenshots, issues, or commits.
 
-## What happens after `/setup`
+## Configuration
 
-```text
-UIU notice page
-      │
-      ├─ fetch up to 5 current notice links
-      │
-      ├─ compare each URL with this server's seen list
-      │
-      ├─ send unseen notices oldest-first
-      │
-      └─ keep the newest 200 seen URLs
-                    │
-                    └─ repeat after 5 minutes
-```
+The main runtime values are in `config/settings.py`:
 
-If UIU’s site cannot be reached, that pass ends quietly and the next scheduled check tries again. A failed request does not intentionally kill the background loop.
+| Setting | Purpose |
+| --- | --- |
+| `BOT_NAME` | Display name used by the bot. |
+| `BOT_VERSION` | Current application version. |
+| `NOTICE_CHECK_INTERVAL_MINUTES` | Delay between automatic notice checks. |
+| `MAX_SEEN_NOTICES` | Maximum stored notice URLs per server. |
 
-## Project map
+Do not reduce the notice interval below five minutes. Repeatedly scraping the UIU site faster than necessary is not responsible or useful.
+
+## Repository layout
 
 ```text
 UIU-Discord_Bot/
-├── commands/       Slash commands and the notice loop
-├── config/         Bot identity and loop settings
-├── data/           Per-server channel and seen-link memory
-├── utils/          UIU notice scraper and calendar data
-├── Asset/readme/   The visual system used on this page
-├── main.py         Startup, extension loading, and command sync
+├── commands/       Discord slash-command cogs
+├── config/         Environment and runtime settings
+├── data/           Local notice-delivery state
+├── utils/          UIU notice and calendar fetchers
+├── main.py         Bot startup and command loading
 └── requirements.txt
 ```
 
-Built with Python, `discord.py`, `requests`, `beautifulsoup4`, and `python-dotenv`.
+## Current limitations
 
-## Full visual reference
+- Academic-calendar data is maintained manually and can become outdated.
+- Notice parsing depends on the public UIU page structure.
+- Runtime notice state is stored in JSON on the machine running the bot.
+- The bot must stay running on a connected machine or hosting service to remain online.
 
-<p align="center">
-  <img src="./Asset/readme/uiu-bot-command-center.webp" alt="UIU BOT profile, notice feed, calendar, and Discord message overview" width="100%" />
-</p>
-
-## Before changing the bot
-
-- The academic calendar is static data in `utils/fetch_calendar.py`; update it when UIU publishes a new semester calendar.
-- `NOTICE_CHECK_INTERVAL_MINUTES` should stay at five minutes or more to avoid hammering the UIU site.
-- The JSON memory is local state. Do not commit real server IDs or channel IDs from a running bot.
-- A useful pull request solves one clear problem and explains how it was checked.
-
-That is the whole personality of the project: useful, quiet, and easy to trust.
+Changes should be small enough to review, include a clear reason, and be tested before the live bot is restarted.

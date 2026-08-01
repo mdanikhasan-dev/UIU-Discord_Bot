@@ -12,10 +12,6 @@ BOT_NAME: str = "UIU_BOT"
 BOT_VERSION: str = "1.0.2"
 BOT_OWNER: str = "sawlper"
 BOT_DESCRIPTION: str = "Your own soft place for notices, updates, and community info."
-BOT_THUMBNAIL_URL: str = (
-    "https://raw.githubusercontent.com/mdanikhasan-me/"
-    "UIU-Discord_Bot/master/Asset/readme/uiu-bot-messenger.png"
-)
 
 # ─ Notice loop settings
 # How often the notice-checking background loop runs, in minutes.
