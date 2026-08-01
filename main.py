@@ -8,6 +8,9 @@ from discord.ext import commands
 from config.settings import BOT_NAME, BOT_VERSION, TOKEN
 
 
+HELPER_MODULES = {"func_utils"}
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Intents
 # ─────────────────────────────────────────────────────────────────────────────
@@ -31,6 +34,10 @@ async def load_extensions(client: commands.Bot) -> None:
             continue
 
         module_name = filename[:-3]
+
+        if module_name in HELPER_MODULES:
+            print(f"  - Skipped {filename} (helper module)")
+            continue
 
         # Skip files whose names are not valid Python identifiers
         # (e.g. "func(1)_for(string).py" cannot be imported).
