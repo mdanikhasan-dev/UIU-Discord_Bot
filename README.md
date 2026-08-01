@@ -1,6 +1,8 @@
 <p align="center">
-  <img src="./Asset/readme/uiu-bot-hero.png" alt="UIU Bot — notices, updates, and community information in Discord" width="100%" />
+  <img src="./Asset/readme/uiu-bot-gallery.gif" alt="A privacy-safe animated montage of the UIU Bot interface" width="100%" />
 </p>
+
+<p align="center"><sub>The opening reel is a privacy-safe crop of the supplied artwork. The sample notice dates and text are illustrative snapshots, not a live feed.</sub></p>
 
 <h1 align="center">UIU Bot</h1>
 
