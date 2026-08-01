@@ -40,16 +40,31 @@ class CalculatorSession:
 
 def _course_lines(courses: list[PlannedCourse]) -> str:
     if not courses:
-        return "No courses added yet. Select **Add course** to begin."
+        return "No courses yet. Use **Add course** or **Add retake** below."
     lines: list[str] = []
     for index, course in enumerate(courses, start=1):
-        credits = format_decimal(course.credits).rstrip("0").rstrip(".")
+        credits = _credit_label(course.credits)
         if course.previous_grade:
-            detail = f"{course.previous_grade} → {course.grade} · retake"
+            detail = (
+                f"`{credits}`   **{course.previous_grade} → {course.grade}**\n"
+                "Retake · replaces the earlier grade"
+            )
         else:
-            detail = f"{course.grade} · {GRADE_POINTS[course.grade]:.2f}"
-        lines.append(f"`{index:02}`  **{credits} credits**  ·  {detail}")
-    return "\n".join(lines)
+            detail = (
+                f"`{credits}`   **{course.grade} · "
+                f"{GRADE_POINTS[course.grade]:.2f}**"
+            )
+        lines.append(f"**Course {index:02}**\n{detail}")
+    return "\n\n".join(lines)
+
+
+def _compact_number(value: Decimal) -> str:
+    return format_decimal(value).rstrip("0").rstrip(".")
+
+
+def _credit_label(value: Decimal) -> str:
+    unit = "credit" if value == Decimal("1") else "credits"
+    return f"{_compact_number(value)} {unit}"
 
 
 def calculator_embed(
@@ -57,37 +72,53 @@ def calculator_embed(
 ) -> discord.Embed:
     embed = discord.Embed(
         title="UIU CGPA Calculator",
-        description="Build this trimester one course at a time.",
+        description=(
+            "Add regular courses or retakes, then calculate. Current standing is "
+            "needed only for retakes and a projected cumulative CGPA."
+        ),
         color=BOT_ACCENT_COLOR,
     )
     if session.avatar_url:
         embed.set_thumbnail(url=session.avatar_url)
-    if session.completed_credits is None:
-        standing = "Not set · optional unless you are adding a retake"
-    else:
-        standing = (
-            f"**{format_decimal(session.current_cgpa)} CGPA** · "
-            f"{format_decimal(session.completed_credits)} completed credits"
-        )
-    embed.add_field(name="Current standing", value=standing, inline=False)
+    current_cgpa = (
+        f"**{format_decimal(session.current_cgpa)}**"
+        if session.current_cgpa is not None
+        else "Not set"
+    )
+    completed_credits = (
+        f"**{_compact_number(session.completed_credits)}**"
+        if session.completed_credits is not None
+        else "Not set"
+    )
+    embed.add_field(name="Current CGPA", value=current_cgpa, inline=True)
+    embed.add_field(name="Completed credits", value=completed_credits, inline=True)
     embed.add_field(
-        name=f"This trimester · {len(session.courses)}/{MAX_SESSION_COURSES} courses",
+        name="Planned courses", value=f"**{len(session.courses)}**", inline=True
+    )
+    embed.add_field(
+        name="This trimester",
         value=_course_lines(session.courses),
         inline=False,
     )
     if result is not None:
         embed.add_field(
-            name="Result",
+            name="Trimester GPA",
+            value=f"**{format_decimal(result.term_gpa)}**",
+            inline=True,
+        )
+        embed.add_field(
+            name="Projected CGPA",
             value=(
-                f"**Trimester GPA:** {format_decimal(result.term_gpa)}\n"
-                + (
-                    f"**Projected CGPA:** {format_decimal(result.projected_cgpa)}\n"
-                    if result.projected_cgpa is not None
-                    else "**Projected CGPA:** add current standing to see it\n"
-                )
-                + f"**Trimester credits:** {format_decimal(result.term_credits)}"
+                f"**{format_decimal(result.projected_cgpa)}**"
+                if result.projected_cgpa is not None
+                else "Set standing"
             ),
-            inline=False,
+            inline=True,
+        )
+        embed.add_field(
+            name="Trimester credits",
+            value=f"**{_compact_number(result.term_credits)}**",
+            inline=True,
         )
     embed.set_footer(
         text="Private session · nothing is saved · UIU's official scale is used"
@@ -95,13 +126,21 @@ def calculator_embed(
     return embed
 
 
-def picker_embed(session: CalculatorSession, course_number: int) -> discord.Embed:
+def picker_embed(
+    session: CalculatorSession, course_number: int, *, is_retake: bool
+) -> discord.Embed:
+    if is_retake:
+        title = f"Add retake · Course {course_number}"
+        instructions = (
+            "Choose the course credits, the new expected grade, and the previous grade "
+            "that is already included in your CGPA."
+        )
+    else:
+        title = f"Add course · Course {course_number}"
+        instructions = "Choose the course credits and expected grade, then save it."
     embed = discord.Embed(
-        title=f"Course {course_number}",
-        description=(
-            "Choose the credit value and expected grade below. "
-            "Use Retake only when the course already exists in your current CGPA."
-        ),
+        title=title,
+        description=instructions,
         color=BOT_ACCENT_COLOR,
     )
     embed.add_field(
@@ -135,7 +174,7 @@ class CreditSelect(discord.ui.Select):
             row=0,
             options=[
                 discord.SelectOption(
-                    label=f"{format_decimal(value).rstrip('0').rstrip('.')} credits",
+                    label=_credit_label(value),
                     value=str(value),
                 )
                 for value in CREDIT_OPTIONS
@@ -183,23 +222,28 @@ class GradeSelect(discord.ui.Select):
 
 
 class CoursePickerView(OwnedView):
-    def __init__(self, session: CalculatorSession) -> None:
+    def __init__(self, session: CalculatorSession, *, is_retake: bool = False) -> None:
         super().__init__(session)
         self.credits: Decimal | None = None
         self.grade: str | None = None
         self.previous_grade: str | None = None
-        self.is_retake = False
+        self.is_retake = is_retake
         self.credit_select = CreditSelect()
         self.grade_select = GradeSelect()
-        self.previous_select = GradeSelect(previous=True)
         self.add_item(self.credit_select)
         self.add_item(self.grade_select)
-        self.add_item(self.previous_select)
-        if session.completed_credits is None:
-            self.retake_toggle.disabled = True
+        self.previous_select: GradeSelect | None = None
+        if is_retake:
+            self.previous_select = GradeSelect(previous=True)
+            self.previous_select.disabled = False
+            self.add_item(self.previous_select)
 
     def current_embed(self) -> discord.Embed:
-        embed = picker_embed(self.session, len(self.session.courses) + 1)
+        embed = picker_embed(
+            self.session,
+            len(self.session.courses) + 1,
+            is_retake=self.is_retake,
+        )
         credits = (
             format_decimal(self.credits).rstrip("0").rstrip(".")
             if self.credits is not None
@@ -218,26 +262,6 @@ class CoursePickerView(OwnedView):
             inline=False,
         )
         return embed
-
-    @discord.ui.button(
-        label="Retake",
-        style=discord.ButtonStyle.secondary,
-        row=3,
-        custom_id="cgpa_retake",
-    )
-    async def retake_toggle(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ) -> None:
-        self.is_retake = not self.is_retake
-        self.previous_select.disabled = not self.is_retake
-        if not self.is_retake:
-            self.previous_grade = None
-            self.previous_select.placeholder = "Previous grade · retakes only"
-        button.label = "Retake · on" if self.is_retake else "Retake"
-        button.style = (
-            discord.ButtonStyle.primary if self.is_retake else discord.ButtonStyle.secondary
-        )
-        await interaction.response.edit_message(embed=self.current_embed(), view=self)
 
     @discord.ui.button(label="Save course", style=discord.ButtonStyle.success, row=3)
     async def save_course(
@@ -275,23 +299,26 @@ class CoursePickerView(OwnedView):
         )
 
 
-class CurrentStandingModal(discord.ui.Modal, title="Current standing"):
+class CurrentStandingModal(discord.ui.Modal, title="Current CGPA and credits"):
     completed = discord.ui.TextInput(
-        label="Completed credits",
-        placeholder="Example: 60",
+        label="1 · Completed credits",
+        placeholder="Example: 41",
         min_length=1,
         max_length=6,
     )
     cgpa = discord.ui.TextInput(
-        label="Current CGPA",
-        placeholder="Example: 2.85",
+        label="2 · Current CGPA",
+        placeholder="Example: 2.00",
         min_length=1,
         max_length=4,
     )
 
-    def __init__(self, session: CalculatorSession) -> None:
+    def __init__(
+        self, session: CalculatorSession, *, next_action: str = "dashboard"
+    ) -> None:
         super().__init__()
         self.session = session
+        self.next_action = next_action
         if session.completed_credits is not None:
             self.completed.default = str(session.completed_credits)
             self.cgpa.default = str(session.current_cgpa)
@@ -327,6 +354,12 @@ class CurrentStandingModal(discord.ui.Modal, title="Current standing"):
             return
         self.session.completed_credits = credits
         self.session.current_cgpa = cgpa
+        if self.next_action == "retake":
+            picker = CoursePickerView(self.session, is_retake=True)
+            await interaction.response.edit_message(
+                embed=picker.current_embed(), view=picker
+            )
+            return
         await interaction.response.edit_message(
             embed=calculator_embed(self.session), view=DashboardView(self.session)
         )
@@ -380,6 +413,9 @@ class DashboardView(OwnedView):
         super().__init__(session)
         self.remove_course.disabled = not session.courses
         self.calculate.disabled = not session.courses
+        self.current_standing.label = (
+            "Edit standing" if session.completed_credits is not None else "Set standing"
+        )
 
     @discord.ui.button(label="Add course", style=discord.ButtonStyle.primary, row=0)
     async def add_course(
@@ -397,13 +433,34 @@ class DashboardView(OwnedView):
             embed=picker.current_embed(), view=picker
         )
 
-    @discord.ui.button(label="Current standing", style=discord.ButtonStyle.secondary, row=0)
+    @discord.ui.button(label="Add retake", style=discord.ButtonStyle.primary, row=0)
+    async def add_retake(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ) -> None:
+        if len(self.session.courses) >= MAX_SESSION_COURSES:
+            await interaction.response.send_message(
+                f"This calculator supports up to {MAX_SESSION_COURSES} courses.",
+                ephemeral=True,
+            )
+            return
+        if self.session.completed_credits is None:
+            await interaction.response.send_modal(
+                CurrentStandingModal(self.session, next_action="retake")
+            )
+            return
+        self.stop()
+        picker = CoursePickerView(self.session, is_retake=True)
+        await interaction.response.edit_message(
+            embed=picker.current_embed(), view=picker
+        )
+
+    @discord.ui.button(label="Set standing", style=discord.ButtonStyle.secondary, row=2)
     async def current_standing(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ) -> None:
         await interaction.response.send_modal(CurrentStandingModal(self.session))
 
-    @discord.ui.button(label="Calculate", style=discord.ButtonStyle.success, row=0)
+    @discord.ui.button(label="Calculate CGPA", style=discord.ButtonStyle.success, row=1)
     async def calculate(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ) -> None:
@@ -420,7 +477,7 @@ class DashboardView(OwnedView):
             embed=calculator_embed(self.session, result), view=DashboardView(self.session)
         )
 
-    @discord.ui.button(label="Remove course", style=discord.ButtonStyle.secondary, row=1)
+    @discord.ui.button(label="Remove course", style=discord.ButtonStyle.secondary, row=2)
     async def remove_course(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ) -> None:
@@ -434,7 +491,7 @@ class DashboardView(OwnedView):
             view=RemoveCourseView(self.session),
         )
 
-    @discord.ui.button(label="Reset", style=discord.ButtonStyle.secondary, row=1)
+    @discord.ui.button(label="Reset", style=discord.ButtonStyle.secondary, row=3)
     async def reset(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ) -> None:
@@ -445,7 +502,7 @@ class DashboardView(OwnedView):
             embed=calculator_embed(self.session), view=DashboardView(self.session)
         )
 
-    @discord.ui.button(label="Grade scale", style=discord.ButtonStyle.secondary, row=1)
+    @discord.ui.button(label="Grade scale", style=discord.ButtonStyle.secondary, row=3)
     async def grade_scale(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ) -> None:

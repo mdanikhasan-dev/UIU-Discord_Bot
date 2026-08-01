@@ -18,7 +18,7 @@ The calculator follows UIU's [published grading scale](https://www.uiu.ac.bd/aca
 1. Run `/cgpa calculator`.
 2. Add current completed credits and CGPA when a cumulative projection is needed.
 3. Select **Add course**, then choose credits and a grade.
-4. For a retake, turn on **Retake** and select the previous grade.
+4. For a retake, select **Add retake**, then choose the credits, new grade, and previous grade.
 5. Add the remaining courses and select **Calculate**.
 
 The session is ephemeral and is not written to the bot's files. Retake projections replace the previous course quality points without adding its credits twice. UIU's public [retake policy](https://www.uiu.ac.bd/academics/academic-information-policies/) does not document every UCAM implementation detail, so UCAM remains authoritative.
