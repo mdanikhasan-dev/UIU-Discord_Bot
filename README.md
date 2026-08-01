@@ -1,39 +1,65 @@
 <p align="center">
-  <img src="./Asset/readme/uiu-bot-source-crop.webp" alt="UIU Bot source artwork supplied by the maintainer" width="560" />
+  <img src="./Asset/readme/uiu-bot-hero.png" alt="UIU Bot — notices, updates, and community information in Discord" width="100%" />
 </p>
 
 <h1 align="center">UIU Bot</h1>
 
 <p align="center">
-  A small Discord bot for keeping UIU updates, CGPA planning, and useful server tools close to the conversation.
+  <strong>University admin, minus the tab-switching.</strong><br />
+  A practical Discord companion for UIU communities.
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white" alt="Python 3.12 or newer" />
-  <img src="https://img.shields.io/badge/discord.py-2.5%2B-5865F2?logo=discord&logoColor=white" alt="discord.py 2.5 or newer" />
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white" alt="Python 3.12 or newer" /></a>
+  <a href="https://discordpy.readthedocs.io/"><img src="https://img.shields.io/badge/discord.py-2.5%2B-5865F2?logo=discord&logoColor=white" alt="discord.py 2.5 or newer" /></a>
+  <img src="https://img.shields.io/badge/UIU-independent-F39200?logoColor=white" alt="Independent UIU community software" />
 </p>
 
-The bot has one useful bias: keep university information in the place a server already uses. It is independent software—not an official UIU service—and it never asks for UCAM credentials or a student password.
+<br />
 
-## What people actually use
+<p align="center">
+  <img src="./Asset/readme/command-constellation.svg" alt="The three main UIU Bot command paths: CGPA planning, notices and private summaries" width="100%" />
+</p>
 
-### `/cgpa calculator`
+<br />
 
-This opens a private, guided panel. Add a regular course or an **Add retake** entry, choose credits and grades from dropdowns, set your current standing when you want a cumulative projection, and calculate the trimester GPA without writing anything to disk.
+## What belongs in the conversation
 
-Retakes ask for the previous grade that is already counted in the standing. They replace the earlier quality points instead of adding the same credits twice. The math follows UIU's [published grading scale](https://www.uiu.ac.bd/academics/grading-performance-evaluation/); UCAM remains the authoritative record.
+UIU Bot is deliberately small in the places that matter. It keeps the repetitive university tasks close to the server instead of making everyone open another dashboard.
 
-### `/notices` and automatic delivery
+### Plan a trimester
 
-`/notices` returns the latest three links from UIU's public notice board. An administrator can run `/setup` once to choose a channel; after that, the bot checks every five minutes and posts only links that server has not seen. Several notices arrive oldest-first. `/stop_notices` disables the automatic posts without erasing the server's history.
+`/cgpa calculator` opens a private, guided panel. Add regular courses, add a retake when a previous grade is being replaced, choose credits and grades from dropdowns, then calculate a trimester GPA and projected CGPA. Nothing entered in the panel is written to disk.
 
-### `/calendar`, `/summary`, and `/poll`
+The calculation follows UIU's [published grading scale](https://www.uiu.ac.bd/academics/grading-performance-evaluation/). UCAM remains the authoritative academic record.
 
-`/calendar` keeps the current undergraduate dates and links back to UIU's source. `/summary` makes a private brief from pasted text or a UTF-8 `.txt`, `.md`, or `.csv` file; it stays local unless `use_ai` is explicitly enabled. `/poll` creates a reaction poll with two to ten unique choices.
+### Let notices arrive in order
 
-`/help`, `/ping`, and `/about` cover the small moments: a topic-based guide, gateway latency, and the bot's version and privacy boundaries.
+`/notices` shows the latest links from UIU's public notice board. An administrator can use `/setup` once to choose a channel; the background checker then posts only unseen notices, oldest first. `/stop_notices` turns that delivery off without erasing the server's local history.
 
-## Run it yourself
+### Keep private text private
+
+`/summary` turns pasted text or a small UTF-8 text file into a short brief. Local summarization is the default. An AI summary is a deliberate `use_ai: true` choice and requires the owner to configure `GROQ_API_KEY`.
+
+<p align="center">
+  <img src="./Asset/readme/privacy-line.svg" alt="UIU Bot privacy boundaries: no UCAM login, ephemeral sessions, and opt-in AI" width="100%" />
+</p>
+
+<br />
+
+## The rest of the toolbox
+
+```text
+/calendar       verified undergraduate dates with the source link
+/poll           a reaction poll with 2–10 unique choices
+/help           a private, topic-based guide
+/ping           gateway latency and online status
+/about          version, independence, and privacy boundaries
+```
+
+The bot is independent software. It is not an official UIU service, does not sign in to UCAM, and never asks for a student password.
+
+## Run your own instance
 
 Python 3.12 or newer is recommended.
 
@@ -45,32 +71,25 @@ python -m venv .venv
 .venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 Copy-Item .env.example .env
-```
-
-Add `DISCORD_TOKEN` to `.env`, then start the process:
-
-```powershell
 python main.py
 ```
 
-`GROQ_API_KEY` is optional. It is used only when the owner configures it and a person explicitly chooses `use_ai: true` for `/summary`. The real `.env` stays local and is ignored by Git.
+Put `DISCORD_TOKEN` in `.env`. `GROQ_API_KEY` is optional and is used only when the owner enables the AI path for `/summary`. The real `.env` stays local and is ignored by Git.
 
-## A few boundaries worth knowing
+## A few honest boundaries
 
 - `data/notices_memory.json` is local, ignored runtime state for configured servers and seen notice links.
-- Grade entries and summary text exist only for their private interaction.
+- Grade entries and summary text live only for the duration of their private interaction.
 - The academic calendar is a maintained public snapshot, not a live UCAM feed.
 - One bot process is supported with local JSON storage; multiple instances need shared transactional storage.
 
-Run the same checks used by CI before changing the running instance:
+Before changing the running instance, run the same checks used by CI:
 
 ```powershell
 python -m compileall -q main.py commands config services utils tests
 python -m unittest discover -s tests -v
 ```
 
-The code is split by responsibility: Discord interactions in `commands/`, grading and storage rules in `services/`, public UIU fetching in `utils/`, and synthetic coverage in `tests/`.
-
 <p align="center">
-  Built for UIU Discord communities. Maintained independently.
+  <sub>Built for UIU Discord communities · maintained independently · designed to stay out of the way</sub>
 </p>

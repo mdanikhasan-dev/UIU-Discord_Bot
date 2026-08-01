@@ -1,0 +1,59 @@
+<svg width="1400" height="520" viewBox="0 0 1400 520" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">UIU Bot command constellation</title>
+  <desc id="desc">Three connected UIU Bot command paths for CGPA planning, notices, and private summaries.</desc>
+  <defs>
+    <linearGradient id="bg" x1="70" y1="20" x2="1330" y2="510" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#091322"/>
+      <stop offset="0.5" stop-color="#101B31"/>
+      <stop offset="1" stop-color="#111429"/>
+    </linearGradient>
+    <linearGradient id="path" x1="126" y1="340" x2="1268" y2="340" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F39200"/>
+      <stop offset="0.5" stop-color="#4E7BFF"/>
+      <stop offset="1" stop-color="#2CB67D"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="7" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" stroke="#FFFFFF" stroke-opacity="0.045"/>
+    </pattern>
+  </defs>
+
+  <rect width="1400" height="520" rx="28" fill="url(#bg)"/>
+  <rect width="1400" height="520" rx="28" fill="url(#grid)"/>
+  <path d="M0 86H1400" stroke="#FFFFFF" stroke-opacity="0.08"/>
+  <text x="72" y="59" fill="#F39200" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" letter-spacing="3">UIU BOT / IN THE CONVERSATION</text>
+  <text x="1328" y="59" text-anchor="end" fill="#93A4C4" font-family="Arial, Helvetica, sans-serif" font-size="14">three useful paths</text>
+
+  <path d="M128 340C252 340 286 220 438 220C586 220 608 340 752 340C902 340 918 220 1070 220C1180 220 1218 340 1272 340" stroke="#FFFFFF" stroke-opacity="0.12" stroke-width="10"/>
+  <path d="M128 340C252 340 286 220 438 220C586 220 608 340 752 340C902 340 918 220 1070 220C1180 220 1218 340 1272 340" stroke="url(#path)" stroke-width="3" stroke-linecap="round" filter="url(#glow)"/>
+
+  <circle cx="128" cy="340" r="12" fill="#F39200"/>
+  <circle cx="438" cy="220" r="12" fill="#F39200"/>
+  <circle cx="752" cy="340" r="12" fill="#4E7BFF"/>
+  <circle cx="1070" cy="220" r="12" fill="#2CB67D"/>
+  <circle cx="1272" cy="340" r="12" fill="#2CB67D"/>
+
+  <text x="112" y="151" fill="#F39200" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" letter-spacing="2">01 / PLAN</text>
+  <text x="112" y="188" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700">/cgpa calculator</text>
+  <text x="112" y="218" fill="#A8B6D0" font-family="Arial, Helvetica, sans-serif" font-size="16">credits · grades · retakes · projection</text>
+  <path d="M112 246H330" stroke="#F39200" stroke-width="4" stroke-linecap="round"/>
+
+  <text x="640" y="151" fill="#6F91FF" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" letter-spacing="2">02 / STAY CURRENT</text>
+  <text x="640" y="188" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700">/notices + /calendar</text>
+  <text x="640" y="218" fill="#A8B6D0" font-family="Arial, Helvetica, sans-serif" font-size="16">public sources · ordered delivery · links back</text>
+  <path d="M640 246H904" stroke="#4E7BFF" stroke-width="4" stroke-linecap="round"/>
+
+  <text x="1012" y="392" fill="#45D69A" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" letter-spacing="2">03 / KEEP IT PRIVATE</text>
+  <text x="1012" y="429" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700">/summary</text>
+  <text x="1012" y="459" fill="#A8B6D0" font-family="Arial, Helvetica, sans-serif" font-size="16">local by default · AI only when chosen</text>
+  <path d="M1012 487H1184" stroke="#2CB67D" stroke-width="4" stroke-linecap="round"/>
+
+  <text x="72" y="482" fill="#93A4C4" font-family="Arial, Helvetica, sans-serif" font-size="14">also in the toolbox</text>
+  <text x="72" y="505" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700">/poll</text>
+  <text x="150" y="505" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700">/ping</text>
+  <text x="232" y="505" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700">/help</text>
+  <text x="314" y="505" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700">/about</text>
+</svg>
