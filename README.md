@@ -1,69 +1,61 @@
 <p align="center">
-  <img src="./Asset/readme/uiu-bot-gallery.gif" alt="A privacy-safe animated montage of the UIU Bot interface" width="100%" />
+  <img src="./Asset/readme/uiu-bot-gallery.gif" alt="UIU Bot doing its thing" width="100%" />
 </p>
 
-<p align="center"><sub>The opening reel is a privacy-safe crop of the supplied artwork. The sample notice dates and text are illustrative snapshots, not a live feed.</sub></p>
+<p align="center"><sub>Just a cropped gif of the bot working. The dates and text in it are fake examples, not a live feed.</sub></p>
 
 <h1 align="center">UIU Bot</h1>
 
 <p align="center">
-  <strong>University admin, minus the tab-switching.</strong><br />
-  A practical Discord companion for UIU communities.
+  <strong>I got tired of tab-switching, so I made this.</strong><br />
+  A Discord bot for UIU students who just want things to be slightly less annoying.
 </p>
 
 <p align="center">
-  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white" alt="Python 3.12 or newer" /></a>
-  <a href="https://discordpy.readthedocs.io/"><img src="https://img.shields.io/badge/discord.py-2.5%2B-5865F2?logo=discord&logoColor=white" alt="discord.py 2.5 or newer" /></a>
-  <img src="https://img.shields.io/badge/UIU-independent-F39200?logoColor=white" alt="Independent UIU community software" />
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white" alt="Python 3.12+" /></a>
+  <a href="https://discordpy.readthedocs.io/"><img src="https://img.shields.io/badge/discord.py-2.5%2B-5865F2?logo=discord&logoColor=white" alt="discord.py 2.5+" /></a>
+  <img src="https://img.shields.io/badge/UIU-independent-F39200?logoColor=white" alt="Not affiliated with UIU" />
+</p>
+
+<p align="center">
+  <a href="https://discord.com/oauth2/authorize?client_id=1434163768488890549&permissions=8&integration_type=0&scope=bot+applications.commands"><img src="https://img.shields.io/badge/Invite_UIU_Bot_to_your_server-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Invite UIU Bot to your server" /></a>
 </p>
 
 <br />
 
-<p align="center">
-  <img src="./Asset/readme/command-constellation.svg" alt="The three main UIU Bot command paths: CGPA planning, notices and private summaries" width="100%" />
-</p>
+## Why it exists
 
-<br />
+I just wanted to stop leaving Discord to do basic university admin. It’s a small tool that keeps the repetitive stuff inside the server so you don't have to open three different dashboards.
 
-## What belongs in the conversation
+### Figuring out your CGPA
 
-UIU Bot is deliberately small in the places that matter. It keeps the repetitive university tasks close to the server instead of making everyone open another dashboard.
+`/cgpa calculator` pops open a private panel. You just add your courses, flag a retake if you're replacing an old grade, pick the credits, and it does the math. It spits out your trimester GPA and what your CGPA will look like. It follows UIU's actual [grading scale](https://www.uiu.ac.bd/academics/grading-performance-evaluation/), but obviously UCAM is the only record that actually matters. Also, nothing you type in that panel gets saved to a database. It just vanishes when you close it.
 
-### Plan a trimester
+### Catching notices
 
-`/cgpa calculator` opens a private, guided panel. Add regular courses, add a retake when a previous grade is being replaced, choose credits and grades from dropdowns, then calculate a trimester GPA and projected CGPA. Nothing entered in the panel is written to disk.
+You usually miss UIU notices unless you're actively refreshing the site. `/notices` just grabs the latest links from the public board. If you run a server, you can use `/setup` once to pick a channel, and the bot will just quietly drop new notices in there as they happen (oldest first). Use `/stop_notices` if you want it to shut up.
 
-The calculation follows UIU's [published grading scale](https://www.uiu.ac.bd/academics/grading-performance-evaluation/). UCAM remains the authoritative academic record.
+### Summarizing walls of text
 
-### Let notices arrive in order
+If someone hands you a massive document and you just need the short version, `/summary` handles it. It runs a local summarizer by default because I hate sending random text to cloud APIs without asking. If you actually want the heavy AI to do it, you have to explicitly set `use_ai: true` and give it a `GROQ_API_KEY`. It stays off until you force it on.
 
-`/notices` shows the latest links from UIU's public notice board. An administrator can use `/setup` once to choose a channel; the background checker then posts only unseen notices, oldest first. `/stop_notices` turns that delivery off without erasing the server's local history.
-
-### Keep private text private
-
-`/summary` turns pasted text or a small UTF-8 text file into a short brief. Local summarization is the default. An AI summary is a deliberate `use_ai: true` choice and requires the owner to configure `GROQ_API_KEY`.
-
-<p align="center">
-  <img src="./Asset/readme/privacy-line.svg" alt="UIU Bot privacy boundaries: no UCAM login, ephemeral sessions, and opt-in AI" width="100%" />
-</p>
-
-<br />
-
-## The rest of the toolbox
+## The other commands
 
 ```text
-/calendar       verified undergraduate dates with the source link
-/poll           a reaction poll with 2–10 unique choices
-/help           a private, topic-based guide
-/ping           gateway latency and online status
-/about          version, independence, and privacy boundaries
+/calendar       undergrad dates (just a static snapshot I maintain, with a source link)
+/poll           basic reaction poll, 2 to 10 choices
+/help           private guide on how to use the thing
+/ping           checks if it's alive
+/about          version info and privacy stuff
 ```
 
-The bot is independent software. It is not an official UIU service, does not sign in to UCAM, and never asks for a student password.
+Just to be super clear: this is independent software. It’s not an official UIU thing, it doesn't log into UCAM, and it will never ask for your student password.
 
-## Run your own instance
+## Running it yourself
 
-Python 3.12 or newer is recommended.
+You don't have to run any of this. I keep a live copy up, so if you just want the bot in your server, hit the invite button at the top and you're done. The rest of this section is for people who want their own instance.
+
+You need Python 3.12 or newer.
 
 ```powershell
 git clone https://github.com/mdanikhasan-me/UIU-Discord_Bot.git
@@ -76,16 +68,16 @@ Copy-Item .env.example .env
 python main.py
 ```
 
-Put `DISCORD_TOKEN` in `.env`. `GROQ_API_KEY` is optional and is used only when the owner enables the AI path for `/summary`. The real `.env` stays local and is ignored by Git.
+Throw your `DISCORD_TOKEN` into the `.env` file. The `GROQ_API_KEY` is completely optional and only matters if you turn on the AI summarizer. Git ignores the real `.env` file anyway.
 
-## A few honest boundaries
+## Things it doesn't do
 
-- `data/notices_memory.json` is local, ignored runtime state for configured servers and seen notice links.
-- Grade entries and summary text live only for the duration of their private interaction.
-- The academic calendar is a maintained public snapshot, not a live UCAM feed.
-- One bot process is supported with local JSON storage; multiple instances need shared transactional storage.
+- `data/notices_memory.json` is just a local file to remember what notices it already posted. It's ignored by Git.
+- Your CGPA inputs and summary texts only exist in memory while you're using them. They don't get written to disk.
+- The calendar isn't a live feed from UCAM. It's just a list I update manually.
+- It's built to run as a single process using local JSON files. If you want to run a massive multi-server cluster, you'll need to rip out the JSON storage and wire up a real database.
 
-Before changing the running instance, run the same checks used by CI:
+If you change the code, just run the same checks the CI runs so you don't break it:
 
 ```powershell
 python -m compileall -q main.py commands config services utils tests
@@ -93,5 +85,5 @@ python -m unittest discover -s tests -v
 ```
 
 <p align="center">
-  <sub>Built for UIU Discord communities · maintained independently · designed to stay out of the way</sub>
+  <sub>Built and maintained by <strong>MD Anik Hasan (Sawlper)</strong>.<br />If you want to reach me, <a href="https://mdanikhasan.com">mdanikhasan.com</a> has every way.</sub>
 </p>
